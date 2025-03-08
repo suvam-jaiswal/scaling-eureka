@@ -1,42 +1,142 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
-export interface GridItem {
-  id: number
-  width: number
-  height: number
-  x: number
-  y: number
-  content: string
+export interface GridItemData {
+  id: string;
+  colSpan: number;
+  rowSpan: number;
+  colStart: number;
+  rowStart: number;
+  content: string;
 }
 
-export const useGridStore = defineStore('grid', () => {
-  const items = ref<GridItem[]>([
-    { id: 1, width: 200, height: 200, x: 0, y: 0, content: 'Item 1' },
-    { id: 2, width: 200, height: 200, x: 220, y: 0, content: 'Item 2' },
-    { id: 3, width: 200, height: 200, x: 440, y: 0, content: 'Item 3' }
-  ])
+// Default grid layout
+const defaultItems: GridItemData[] = [
+  {
+    id: '1',
+    colSpan: 2,
+    rowSpan: 1,
+    colStart: 1,
+    rowStart: 1,
+    content: 'Item 1'
+  },
+  {
+    id: '2',
+    colSpan: 1,
+    rowSpan: 1,
+    colStart: 3,
+    rowStart: 1,
+    content: 'Item 2'
+  },
+  {
+    id: '3',
+    colSpan: 2,
+    rowSpan: 2,
+    colStart: 1,
+    rowStart: 2,
+    content: 'Item 3'
+  },
+  {
+    id: '4',
+    colSpan: 1,
+    rowSpan: 1,
+    colStart: 3,
+    rowStart: 2,
+    content: 'Item 4'
+  },
+  {
+    id: '5',
+    colSpan: 4,
+    rowSpan: 1,
+    colStart: 1,
+    rowStart: 4,
+    content: 'Item 5 (Full Width)'
+  }
+];
 
-  const addItem = (item: Omit<GridItem, 'id'>) => {
-    const id = Math.max(0, ...items.value.map(item => item.id)) + 1
-    items.value.push({ ...item, id })
+export const useGridStore = defineStore('grid', () => {
+  // State
+  const items = ref<GridItemData[]>([...defaultItems]);
+  
+  // Lifecycle hook to load stored layout
+  loadLayout();
+
+  // Actions
+  function addItem(item: GridItemData) {
+    items.value.push(item);
+    saveLayout();
   }
 
-  const updateItem = (id: number, updates: Partial<Omit<GridItem, 'id'>>) => {
-    const index = items.value.findIndex(item => item.id === id)
+  function updateItem(id: string, updatedData: Partial<GridItemData>) {
+    const index = items.value.findIndex(item => item.id === id);
     if (index !== -1) {
-      items.value[index] = { ...items.value[index], ...updates }
+      items.value[index] = { ...items.value[index], ...updatedData };
+      saveLayout();
     }
   }
 
-  const removeItem = (id: number) => {
-    items.value = items.value.filter(item => item.id !== id)
+  function removeItem(id: string) {
+    items.value = items.value.filter(item => item.id !== id);
+    saveLayout();
+  }
+
+  function moveItem(id: string, colStart: number, rowStart: number) {
+    const index = items.value.findIndex(item => item.id === id);
+    if (index !== -1) {
+      items.value[index].colStart = colStart;
+      items.value[index].rowStart = rowStart;
+      saveLayout();
+    }
+  }
+
+  function resizeItem(id: string, colSpan: number, rowSpan: number) {
+    const index = items.value.findIndex(item => item.id === id);
+    if (index !== -1) {
+      items.value[index].colSpan = colSpan;
+      items.value[index].rowSpan = rowSpan;
+      saveLayout();
+    }
+  }
+
+  // Load layout from localStorage on initialization
+  function loadLayout() {
+    const savedLayout = localStorage.getItem('grid-layout');
+    if (savedLayout) {
+      try {
+        items.value = JSON.parse(savedLayout);
+        return true;
+      } catch (error) {
+        console.error('Failed to load layout from localStorage:', error);
+        return false;
+      }
+    }
+    return false;
+  }
+
+  // Save layout to localStorage
+  function saveLayout() {
+    try {
+      localStorage.setItem('grid-layout', JSON.stringify(items.value));
+      return true;
+    } catch (error) {
+      console.error('Failed to save layout to localStorage:', error);
+      return false;
+    }
+  }
+
+  // Reset to default layout
+  function resetLayout() {
+    items.value = [...defaultItems];
+    saveLayout();
   }
 
   return {
     items,
     addItem,
     updateItem,
-    removeItem
-  }
-})
+    removeItem,
+    moveItem,
+    resizeItem,
+    resetLayout
+  };
+});

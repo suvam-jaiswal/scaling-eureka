@@ -1,167 +1,165 @@
 <template>
   <div 
+    class="p-grid-item"
+    :class="{ 'p-grid-item--dragging': isDragging }"
     ref="itemRef"
-    class="grid-item"
-    :style="{
-      width: `${item.width}px`,
-      height: `${item.height}px`,
-      transform: `translate(${item.x}px, ${item.y}px)`
-    }"
   >
-    <div class="grid-item-content">
-      {{ item.content }}
+    <div class="p-grid-item__header">
+      <div class="p-grid-item__drag-handle" ref="dragHandleRef">
+        <i class="pi pi-bars"></i>
+      </div>
+      <div class="p-grid-item__title">
+        <slot name="header">Widget</slot>
+      </div>
+      <div class="p-grid-item__actions">
+        <button 
+          class="p-button p-button-text p-button-rounded p-button-sm"
+          aria-label="Settings"
+        >
+          <i class="pi pi-cog"></i>
+        </button>
+      </div>
     </div>
-    <div class="resize-handle"></div>
+    <hr class="p-divider m-0" />
+    <div class="p-grid-item__content">
+      <slot>
+        <div class="p-grid-item__placeholder">
+          <i class="pi pi-box mb-2" style="font-size: 1.5rem"></i>
+          <span>Widget Content</span>
+        </div>
+      </slot>
+    </div>
+    <div class="p-grid-item__resize-handle" ref="resizeHandleRef"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, defineProps, defineEmits } from 'vue'
-import interact from 'interactjs'
+import { ref } from 'vue';
 
-interface GridItemData {
-  id: number
-  width: number
-  height: number
-  x: number
-  y: number
-  content: string
-}
+// Component state
+const itemRef = ref<HTMLElement | null>(null);
+const dragHandleRef = ref<HTMLElement | null>(null);
+const resizeHandleRef = ref<HTMLElement | null>(null);
+const isDragging = ref(false);
 
-interface InteractEvent {
-  target: HTMLElement
-  dx: number
-  dy: number
-  rect: {
-    width: number
-    height: number
-  }
-  deltaRect: {
-    left: number
-    top: number
-  }
-}
-
-const props = defineProps<{
-  item: GridItemData
-}>()
-
+// Define emits
 const emit = defineEmits<{
-  (e: 'update', id: number, updates: Partial<Omit<GridItemData, 'id'>>): void
-}>()
+  (e: 'move', position: { x: number, y: number }): void;
+  (e: 'resize', size: { width: number, height: number }): void;
+}>();
 
-const itemRef = ref<HTMLElement | null>(null)
-
-onMounted(() => {
-  if (!itemRef.value) return
-
-  // Make the element draggable
-  interact(itemRef.value)
-    .draggable({
-      inertia: true,
-      modifiers: [
-        interact.modifiers.restrictRect({
-          restriction: 'parent',
-          endOnly: true
-        })
-      ],
-      autoScroll: true,
-      listeners: {
-        move: dragMoveListener
-      }
-    })
-    .resizable({
-      // Resize from all edges and corners
-      edges: { left: false, right: true, bottom: true, top: false },
-      
-      listeners: {
-        move: resizeMoveListener
-      },
-      modifiers: [
-        // Minimum size
-        interact.modifiers.restrictSize({
-          min: { width: 100, height: 100 }
-        })
-      ],
-      inertia: true
-    })
-})
-
-function dragMoveListener(event: InteractEvent) {
-  const target = event.target
-  
-  // Keep the dragged position in the data-x/data-y attributes
-  const x = (parseFloat(target.getAttribute('data-x') || '0') || props.item.x) + event.dx
-  const y = (parseFloat(target.getAttribute('data-y') || '0') || props.item.y) + event.dy
-
-  // Update the element's position via emitting an event
-  emit('update', props.item.id, { x, y })
-  
-  // Update the element's style
-  target.style.transform = `translate(${x}px, ${y}px)`
-
-  // Update the position attributes
-  target.setAttribute('data-x', x.toString())
-  target.setAttribute('data-y', y.toString())
-}
-
-function resizeMoveListener(event: InteractEvent) {
-  const target = event.target
-  let x = (parseFloat(target.getAttribute('data-x') || '0') || props.item.x)
-  let y = (parseFloat(target.getAttribute('data-y') || '0') || props.item.y)
-
-  // Translate when resizing from top or left edges
-  x += event.deltaRect.left
-  y += event.deltaRect.top
-
-  // Update the element's dimensions via emitting an event
-  emit('update', props.item.id, { 
-    width: event.rect.width,
-    height: event.rect.height,
-    x,
-    y
-  })
-
-  // Update the element's style
-  target.style.width = `${event.rect.width}px`
-  target.style.height = `${event.rect.height}px`
-  target.style.transform = `translate(${x}px, ${y}px)`
-
-  // Update the position attributes
-  target.setAttribute('data-x', x.toString())
-  target.setAttribute('data-y', y.toString())
-}
+// Props and logic will be extended once we add interactjs
 </script>
 
-<style scoped>
-.grid-item {
-  position: absolute;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 1rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  touch-action: none;
-  user-select: none;
-}
-
-.grid-item-content {
+<style>
+.p-grid-item {
   height: 100%;
   width: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
+  flex-direction: column;
+  background-color: var(--surface-card);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
 }
 
-.resize-handle {
+.p-grid-item--dragging {
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+  opacity: 0.95;
+  border-color: var(--primary-color);
+}
+
+.p-grid-item__header {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: var(--surface-section);
+  cursor: move;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.p-grid-item__drag-handle {
+  margin-right: 0.5rem;
+  color: var(--text-color-secondary);
+  cursor: grab;
+  background-color: rgba(0, 0, 0, 0.03);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.p-grid-item__drag-handle:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.p-grid-item__drag-handle:active {
+  cursor: grabbing;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.p-grid-item__title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color);
+}
+
+.p-grid-item__actions {
+  display: flex;
+  align-items: center;
+}
+
+.p-grid-item__content {
+  flex: 1;
+  padding: 1rem;
+  overflow: auto;
+  background-color: white;
+}
+
+.p-grid-item__placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-secondary);
+  text-align: center;
+  padding: 2rem;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.01);
+}
+
+.p-grid-item__resize-handle {
   position: absolute;
-  right: 0;
   bottom: 0;
+  right: 0;
   width: 20px;
   height: 20px;
-  background-color: rgba(0, 0, 0, 0.1);
-  cursor: nwse-resize;
-  border-top-left-radius: 10px;
+  background-image: linear-gradient(135deg, transparent 40%, var(--surface-border) 40%, var(--surface-border) 60%, transparent 60%);
+  background-size: 14px 14px;
+  background-repeat: no-repeat;
+  background-position: right bottom;
+  cursor: se-resize;
+  z-index: 10;
+  opacity: 0.8;
+}
+
+.p-grid-item__resize-handle:hover {
+  opacity: 1;
+  background-image: linear-gradient(135deg, transparent 40%, var(--primary-color) 40%, var(--primary-color) 60%, transparent 60%);
+}
+
+.p-divider {
+  border: 0;
+  border-top: 1px solid var(--surface-border);
+  margin: 0;
 }
 </style>
