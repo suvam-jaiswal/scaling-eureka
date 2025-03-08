@@ -1,0 +1,41 @@
+{
+  "name": "interact-grid",
+  "version": "1.0.0",
+  "description": "To showcase html/css grid in vue 3, with interact to handle resizing of grid items and sorting/dragging dropping and reordering too.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "test": "echo \"No tests defined\" && exit 0",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "keywords": [
+    "typescript",
+    "vue",
+    "3",
+    "interactjs"
+  ],
+  "dependencies": {
+    "interactjs": "^1.10.17",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4",
+    "pinia": "^2.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.5",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "eslint": "^8.46.0",
+    "eslint-config-standard-with-typescript": "^43.0.1",
+    "eslint-plugin-vue": "^9.33.0",
+    "globals": "^16.0.0",
+    "typescript": "^5.1.6",
+    "vite": "^4.4.7",
+    "vue-tsc": "^1.8.8"
+  },
+  "author": "svmjaiswal@gmail.com",
+  "license": "ISC"
+}

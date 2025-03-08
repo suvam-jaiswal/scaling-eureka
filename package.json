@@ -15,7 +15,7 @@
     "publish": "nx release publish",
     "changelog": "nx release changelog"
   },
-  "keywords": [],
+  "keywords": [ ],
   "author": "",
   "license": "ISC",
   "workspaces": [
@@ -33,5 +33,5 @@
     "vite": "^6.0.0",
     "vitest": "^3.0.0"
   },
-  "dependencies": {}
+  "dependencies": { }
 }
