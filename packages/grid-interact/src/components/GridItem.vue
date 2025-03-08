@@ -141,34 +141,34 @@ onMounted(() => {
   }
 
   if (resizeHandleRef.value && itemRef.value) {
-    // Instead of making the item resizable, make the handle draggable
-    // This ensures only the handle can be used for resizing
-    interact(resizeHandleRef.value)
-      .draggable({
+    // Make the item resizable, but restrict to only using the handle
+    interact(itemRef.value)
+      .resizable({
+        // Enable resizing on bottom right corner
+        edges: { bottom: true, right: true },
+        
+        // VERY IMPORTANT: Only allow resizing when starting from the handle
+        allowFrom: '.p-grid-item__resize-handle',
+        
         inertia: false,
-        autoScroll: true,
         modifiers: [],
         listeners: {
           start: (event) => {
             console.log('Resize started', {
               target: event.target,
-              clientX: event.client.x,
-              clientY: event.client.y
+              rect: event.rect
             });
           },
           move: (event) => {
             console.log('Resize move', {
-              dx: event.dx,
-              dy: event.dy,
-              clientX: event.client.x,
-              clientY: event.client.y
+              rect: event.rect,
+              deltaRect: event.deltaRect
             });
           },
           end: (event) => {
             console.log('Resize ended', {
               target: event.target,
-              clientX: event.client.x,
-              clientY: event.client.y
+              rect: event.rect
             });
           }
         }
@@ -181,8 +181,8 @@ onUnmounted(() => {
   if (dragHandleRef.value) {
     interact(dragHandleRef.value).unset();
   }
-  if (resizeHandleRef.value) {
-    interact(resizeHandleRef.value).unset();
+  if (itemRef.value) {
+    interact(itemRef.value).unset();
   }
 });
 
