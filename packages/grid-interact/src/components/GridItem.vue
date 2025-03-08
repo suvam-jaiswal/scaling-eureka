@@ -89,8 +89,8 @@ const props = withDefaults(defineProps<Props>(), {
   size: undefined
 });
 
-// Define emits
-const emit = defineEmits<{
+// Define emits - will be used when we implement actual movement
+defineEmits<{
   (e: 'move', position: { x: number, y: number }): void;
   (e: 'resize', size: { width: number, height: number }): void;
 }>();
@@ -141,11 +141,13 @@ onMounted(() => {
   }
 
   if (resizeHandleRef.value && itemRef.value) {
+    // Instead of making the item resizable, make the handle draggable
+    // This ensures only the handle can be used for resizing
     interact(resizeHandleRef.value)
       .draggable({
         inertia: false,
-        modifiers: [],
         autoScroll: true,
+        modifiers: [],
         listeners: {
           start: (event) => {
             console.log('Resize started', {
