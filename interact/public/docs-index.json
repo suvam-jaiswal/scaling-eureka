@@ -1,0 +1,68 @@
+[
+  {
+    "id": "01-overview",
+    "title": "Interact.js Overview",
+    "path": "/01-overview.md",
+    "order": 1
+  },
+  {
+    "id": "02-installation",
+    "title": "Installation and Setup in a Vue 3 TypeScript Project",
+    "path": "/02-installation.md",
+    "order": 2
+  },
+  {
+    "id": "03-usage",
+    "title": "Basic Usage: Making Elements Draggable",
+    "path": "/03-usage.md",
+    "order": 3
+  },
+  {
+    "id": "04-api",
+    "title": "Interact.js API Reference",
+    "path": "/04-api.md",
+    "order": 4
+  },
+  {
+    "id": "05-tutorials",
+    "title": "Tutorials and Implementation Guides",
+    "path": "/05-tutorials.md",
+    "order": 5
+  },
+  {
+    "id": "06-best-practices",
+    "title": "Best Practices and Performance Tips for Interact.js",
+    "path": "/06-best-practices.md",
+    "order": 6
+  },
+  {
+    "id": "07-examples",
+    "title": "Practical Examples",
+    "path": "/07-examples.md",
+    "order": 7
+  },
+  {
+    "id": "08-typescript-interfaces",
+    "title": "TypeScript Interfaces for Interact.js",
+    "path": "/08-typescript-interfaces.md",
+    "order": 8
+  },
+  {
+    "id": "09-advanced-features",
+    "title": "Advanced Features of Interact.js",
+    "path": "/09-advanced-features.md",
+    "order": 9
+  },
+  {
+    "id": "10-modifiers-system",
+    "title": "Interact.js Modifiers System",
+    "path": "/10-modifiers-system.md",
+    "order": 10
+  },
+  {
+    "id": "11-complete-api-reference",
+    "title": "Complete Interact.js API Reference",
+    "path": "/11-complete-api-reference.md",
+    "order": 11
+  }
+]

@@ -1,0 +1,1250 @@
+README-Intro.md
+
+Interact.js Overview
+
+Interact.js is a JavaScript library for drag and drop, resizing, and multi-touch gestures on modern browsers ￼. It provides a unified API for mouse, touch, and pointer events, smoothing out browser differences ￼. This library is free and open-source and includes powerful features like momentum-based inertia and modular snapping and restriction functionality out of the box ￼. In practice, this means you can easily add natural-feeling drag-and-drop UI elements, resizable panels, draggable grid layouts, touch gestures (like pinch/zoom or rotate), and more to your web applications.
+
+Key Features:
+ • Draggable Elements: Make any DOM element draggable with full control over drag start, movement, and end events.
+ • Resizable Elements: Enable on-the-fly resizing of elements (with optional constraints like aspect ratio or specific edges).
+ • Multi-touch Gestures: Support pinch, rotate, and other multi-pointer gestures with gesture events (e.g., for touch-based UIs).
+ • Inertia & Throwing: Optionally continue movement after release for a natural “throwing” effect, gradually decelerating (inertia).
+ • Snapping to Grid or Points: Snap drag or resize movements to a grid or specific coordinates for precise alignment ￼ ￼.
+ • Modifiers (Constraints): Easily restrict movement within a boundary (parent element, viewport, etc.) or enforce minimum/maximum sizes ￼ ￼.
+ • Dropzone & Collisions: Designate drop targets to build drag-and-drop interfaces with events for when draggable items enter or drop onto targets ￼ ￼.
+ • Simultaneous Interactions: Allow multiple elements to be dragged/resized at the same time (multi-pointer and multi-element support).
+ • Unified Pointer Events: Abstracts away differences between touch, mouse, and pointer events, giving consistent event data on all devices ￼.
+ • Performance Focus: Interact.js is lightweight and doesn’t impose a heavy framework; it optimizes pointer event handling and only modifies the DOM to update the cursor style by default ￼.
+
+How Interact.js Works
+
+Interact.js works by letting you create an “Interactable” for any element or group of elements. You activate features (draggable, resizable, etc.) on these interactables and define event listeners for interactions. For example, you can make an element draggable and listen for drag events to manually update the element’s position. Notably, Interact.js does not move or resize elements for you by itself – instead, it provides the events and calculations (such as drag distance, pointer coordinates, etc.), and you apply those to your element in your own code ￼. This design gives you full control over the DOM updates, allowing integration with frameworks like Vue.js and state management as needed.
+
+Because the library doesn’t automatically change your element’s position or size (except for showing a temporary cursor style change), you have the freedom to decide how an interaction affects your application state. For instance, on a dragmove event you might update the element’s CSS transform or Vue component state to reflect the new position. On a resizemove event, you can adjust the element’s width/height style or emit an event to update a layout model. Interact.js simply makes it easier to handle the low-level pointer math and offers add-ons (modifiers) to handle common constraints like boundaries and snapping.
+
+Common Use Cases
+
+Interact.js can be used anywhere you need interactive movement or sizing of elements in the browser. Some common use cases include:
+ • Draggable Widgets and Cards: Create drag-and-drop dashboards or kanban boards where cards can be rearranged via drag.
+ • Resizable Panels and Dialogs: Let users resize split panes, modal dialogs, or images by dragging from edges or corners.
+ • Interactive Grid Layouts: Build a grid system (like a dashboard or photo gallery) where items can be repositioned and resized with snap-to-grid behavior for neat alignment.
+ • Drag and Drop File Uploads or Sortable Lists: Use drag interactions and dropzones to implement file upload targets or reordering list items (by dragging an item and dropping it into a new position).
+ • Image Croppers or Selection Regions: Allow users to draw or move/resize a rectangular selection on an image (draggable + resizable with aspect ratio constraints).
+ • Custom Sliders and Controls: Make custom UI controls (like sliders, range selectors, knob dials) draggable for user input.
+ • Touch Gestures on Mobile: Implement pinch-zoom on images or maps, rotate gestures on elements, or a draw/paint canvas that responds to multi-touch using the gesturable features.
+ • Games and Graphics Applications: For example, dragging game pieces on a board, resizing shapes in a diagramming tool, or implementing a simple drag-to-connect interface.
+
+Because Interact.js is framework-agnostic, it integrates well with Vue.js (as well as React, Angular, etc.) by letting you handle DOM updates and state in the Vue way (e.g., using reactive data or Vuex) while Interact.js manages the pointer events. In the following sections, we’ll see how to set up Interact.js in a Vue 3 project with TypeScript and go from basic usage to advanced techniques like grid snapping and custom event handling.
+
+⸻
+
+README-Installation.md
+
+Installation and Setup in a Vue 3 TypeScript Project
+
+Setting up Interact.js in a Vue 3 project is straightforward. The library is distributed via npm and includes TypeScript type definitions, making it easy to use in a TypeScript-enabled project ￼.
+
+1. Install the Interact.js Package
+
+Use npm (or Yarn/Pnpm) to add Interact.js to your project:
+
+npm install interactjs
+
+This will install the pre-bundled package with all features included ￼. Since the library is written in TypeScript, the npm package already includes the necessary type definitions for use in your TypeScript project ￼. You do not need to install @types/interactjs; the types are built-in. (If you were using Interact.js via a CDN in a non-bundled environment, you could install @interactjs/types for editor support ￼, but for Vue projects using a module bundler this isn’t necessary.)
+
+2. Import and Integrate Interact.js in Vue
+
+Once installed, you can import Interact.js into your Vue components or setup code. Typically, you’ll use it in a specific component where you have an element that needs to be draggable/resizable. For example, in a Vue 3 Single File Component:
+
+<template>
+  <div ref="dragBox" class="draggable-box">
+    Drag or Resize Me
+  </div>
+</template>
+
+<script setup lang="ts">
+import { onMounted, ref } from 'vue';
+import interact from 'interactjs';
+
+const dragBox = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  if (dragBox.value) {
+    // Create an interactable for the element
+    interact(dragBox.value)
+      .draggable({
+        listeners: {
+          move(event) {
+            // update position during drag (example)
+            event.target.style.transform =
+              `translate(${event.dx}px, ${event.dy}px)`;
+          }
+        }
+      })
+      .resizable({
+        edges: { top: true, left: true, bottom: true, right: true },
+        listeners: {
+          move(event) {
+            // update size during resize (example)
+            event.target.style.width  = `${event.rect.width}px`;
+            event.target.style.height = `${event.rect.height}px`;
+          }
+        }
+      });
+  }
+});
+</script>
+
+<style>
+.draggable-box {
+  /* Recommended CSS for interactable elements */
+  touch-action: none;    /* prevent default touch gestures (like scrolling) during interactions */
+  user-select: none;     /* prevent text selection during drag */
+  /* optional styling */
+  width: 150px;
+  height: 150px;
+  background: #4e9aff;
+}
+</style>
+
+In this example, we import interact and use it inside onMounted (so the DOM element is available) to make our div draggable and resizable. We attached minimal listeners to update the element’s style directly for demonstration. In a real project, you might update component state instead of directly mutating the DOM, but this shows the basic idea.
+
+Using Refs: We use a Vue ref (dragBox) to get a reference to the DOM element. Interact.js can accept a DOM element, CSS selector, or even an array of elements as a target. Using a $refs or the Composition API ref is ideal in Vue to ensure you target the correct element.
+
+Composition API Consideration: We call interact(dragBox.value) in onMounted so that it only runs on the client (browser). If you attempt to run it during SSR or before the component is mounted, the element won’t exist. Always initialize Interact.js in a lifecycle hook that runs after the component is rendered (e.g., onMounted in Composition API, or the mounted() hook in Options API).
+
+3. Alternate Installation: Using Scoped Packages (Tree Shaking)
+
+The default interactjs package includes all features (drag, resize, gestures, modifiers, etc.). If you’re concerned about bundle size and only need some features, Interact.js offers a modular approach with scoped packages ￼ ￼. For example, you can install @interactjs/interact (core), @interactjs/actions (draggable/resizable/gestures), @interactjs/auto-start, @interactjs/modifiers, etc., individually. This allows you to import only what you use.
+
+For instance:
+
+npm install @interactjs/interact @interactjs/actions @interactjs/auto-start @interactjs/modifiers
+
+And in your code:
+
+import '@interactjs/auto-start';     // enable auto-start of interactions
+import '@interactjs/actions/drag';   // import draggable action
+import '@interactjs/actions/resize'; // import resizable action
+import '@interactjs/modifiers';      // import modifiers (snap, restrict)
+import interact from '@interactjs/interact';
+
+This approach requires a bit more setup but can reduce bundle size by excluding unused features ￼ ￼. For many applications, using the standard interactjs package is perfectly fine to start with, and you can refactor to the modular imports later if needed.
+
+4. Global Integration (Optional)
+
+If you plan to use Interact.js in many components, you could create a Vue plugin or directive for it. For example, a custom v-interact directive could automatically apply draggable/resizable to elements. This can promote reuse and clean up component code. However, implementing such an abstraction is advanced and beyond the scope of this guide. Initially, it’s recommended to integrate Interact.js on a per-component basis where needed. This makes it easier to manage in a TypeScript context (keeping the logic local and strongly typed within the component).
+
+Now that Interact.js is installed and set up, we can move on to using it for common interaction tasks in Vue. In the next section, we’ll cover how to enable dragging, resizing, gestures, and other features, and how to handle the events generated by Interact.js.
+
+⸻
+
+README-Usage.md
+
+Basic Usage: Making Elements Draggable
+
+To make an element draggable, you create an interactable for it and call the .draggable() method with any desired options. The most important option is the event listeners for drag events. Interact.js will emit events such as dragstart, dragmove, and dragend during the interaction. You can provide listener functions for these events to update your UI.
+
+Example – Draggable Element: Suppose we have a <div class="drag-item">...</div> in our template. We can enable dragging as follows:
+
+interact('.drag-item').draggable({
+  listeners: {
+    start(event) {
+      console.log('Drag started on', event.target);
+    },
+    move(event) {
+      // Change element's position by the amount dragged since last event
+      const { dx, dy } = event;
+      event.target.style.transform =
+        `translate(${dx}px, ${dy}px)`;
+    },
+    end(event) {
+      console.log('Drag ended with velocity',
+                  event.velocityX, event.velocityY);
+    }
+  }
+});
+
+In this snippet, we used a CSS selector .drag-item to target the element. You could also pass a specific element (e.g., interact(elementRef.value)). We provided three listeners:
+ • start: called when dragging starts (pointer goes down and movement is detected).
+ • move: called continuously as the element is dragged (pointer moves). Here we adjust the element’s CSS transform by the incremental dx and dy values provided by the event.
+ • end: called when the drag finishes (pointer is released).
+
+Understanding Drag Event Data: Interact.js provides useful properties on the event object. For drag events:
+ • event.dx and event.dy – the change in x and y coordinates since the last event (so you can incrementally move the element) ￼.
+ • event.pageX/pageY – the current absolute position of the pointer on the page.
+ • event.rect – (for resize, not used in drag).
+ • event.velocityX/velocityY – the speed of the pointer at the end of the drag (useful in end events, e.g., to calculate momentum).
+ • event.target – the DOM element being dragged.
+ • event.interactable – the Interactable object (in case you need to access its settings).
+
+Typically, for dragging, you maintain the element’s position in some variables or data attributes. In the example above, we directly applied dx, dy to transform. This works for a simple demo but will reset on each move. A better approach is to track the element’s cumulative position. For instance:
+
+// at top: let pos = { x: 0, y: 0 };
+interact('.drag-item').draggable({
+  listeners: {
+    move(event) {
+      pos.x += event.dx;
+      pos.y += event.dy;
+      event.target.style.transform =
+        `translate(${pos.x}px, ${pos.y}px)`;
+    }
+  }
+});
+
+This way, pos keeps track of the element’s translated position, and each move event moves it from its current position ￼ ￼. Alternatively, you can store data-x and data-y attributes on the element to persist the position between events (as shown later in the resizing example).
+
+Note: It’s recommended to add some CSS to draggable elements: touch-action: none; user-select: none; ￼. This prevents the browser’s default behaviors (scrolling, text selection) from interfering with touch/mouse dragging.
+
+Enabling Resizing of Elements
+
+Making an element resizable is similar to draggable. You use the .resizable() method with options. The key option for resizing is specifying which edges/corners can be dragged to resize.
+
+Example – Resizable Element: Assume a <div class="resize-item">...</div> in the template.
+
+interact('.resize-item').resizable({
+  edges: { top: true, left: true, bottom: true, right: true },
+  listeners: {
+    start(event) {
+      console.log('Resize started');
+    },
+    move(event) {
+      // Get change in dimensions
+      const { width, height } = event.rect;       // new size
+      const { left, top } = event.deltaRect;      // size change since last event
+      // Update the element's style
+      event.target.style.width  = `${width}px`;
+      event.target.style.height = `${height}px`;
+      // Optionally adjust position to account for top/left edges if they were dragged
+      const x = (parseFloat(event.target.dataset.x) || 0) + left;
+      const y = (parseFloat(event.target.dataset.y) || 0) + top;
+      event.target.style.transform = `translate(${x}px, ${y}px)`;
+      // Store the updated position for next move
+      event.target.dataset.x = x;
+      event.target.dataset.y = y;
+    },
+    end(event) {
+      console.log('Resize ended. New size:', event.rect.width, 'x', event.rect.height);
+    }
+  }
+});
+
+In this configuration:
+ • edges: { top: true, ... } enables all four edges for resizing. This means the user can grab any edge or corner to resize the box ￼ ￼. You can also specify selectors or elements for edges. For example, you could set right: '.handle-se' to only allow resizing when a specific handle element (with class handle-se) is dragged.
+ • In the move listener, we use event.rect which contains the new calculated width and height of the element ￼. We apply those to the element’s style. We also use event.deltaRect (which has top, left, bottom, right deltas) to adjust the element’s translation if needed ￼. In a resize, when you drag the top or left edges, the element’s top-left position changes. The example above stores data-x and data-y on the element (initially 0) and updates them by the change in left and top so that the element stays in the correct position while resizing from those edges ￼ ￼.
+ • This approach of storing data-x/data-y and using CSS transforms for positioning keeps the element in place and only adjusts as needed, which is a known pattern for combining dragging and resizing.
+
+Resizing Options: In addition to edges, Interact.js has other options and considerations for resizing:
+ • By default, resizing with edges means the user can also grab corners (which is simply grabbing both a horizontal and vertical edge at once).
+ • You can restrict which edges: e.g., edges: { left: false, right: true, top: false, bottom: true } would only allow resizing from the bottom-right corner (since top/left are disabled, effectively only bottom and right edges work, and their intersection is the bottom-right corner).
+ • If you want to resize from only the corners and not the mid edges, you could set the edges to specific corner handle elements instead of true/false.
+ • To maintain aspect ratio during resize, Interact.js provides an aspect ratio modifier (discussed later in Advanced usage). There isn’t a simple preserveAspectRatio: true option; instead you use a modifier or custom logic.
+ • The event.rect provides the new position and size of the element’s bounding box on each resizemove. This is useful if you want to update other layout info or just log final size on end.
+
+Multi-Touch Gestures (Pinch/Zoom/Rotate)
+
+Interact.js supports multi-pointer gestures through the .gesturable() method. Gestures are recognized when at least two pointers (e.g., two fingers on a touchscreen) are on the target element. Common use cases are pinch-to-zoom and rotate gestures.
+
+Example – Rotate Gesture: Imagine an element (like an image or div) that we want to rotate via a two-finger twist:
+
+interact('.rotate-area').gesturable({
+  listeners: {
+    move(event) {
+      // Keep track of cumulative rotation:
+      let currentAngle = parseFloat(event.target.getAttribute('data-angle')) || 0;
+      currentAngle += event.da; // event.da = change in angle since last event [oai_citation_attribution:30‡interactjs.io](https://interactjs.io/docs/gesturable/#:~:text=properties%3A)
+      event.target.style.transform = `rotate(${currentAngle}deg)`;
+      event.target.setAttribute('data-angle', currentAngle.toString());
+      // Optionally, also scale the element:
+      if (event.scale !== 1) {
+        // event.scale is the ratio of current gesture distance to start distance [oai_citation_attribution:31‡interactjs.io](https://interactjs.io/docs/gesturable/#:~:text=properties%3A)
+        event.target.style.transform += `scale(${event.scale})`;
+      }
+    },
+    start(event) {
+      // maybe store initial angle or show UI feedback
+    },
+    end(event) {
+      console.log('Gesture ended');
+    }
+  }
+});
+
+In this snippet:
+ • We use event.da (delta angle) from gesture events to increment the rotation ￼. The library calculates the angle between the two touch points and how it changes.
+ • event.scale is the ratio of distances (current distance between touches / starting distance). If you want to implement pinch-to-zoom, you can use event.scale. In the example above, we simply apply scaling live. (Often for pinch-zoom, you would apply a cumulative scale similarly to angle).
+ • We stored the cumulative rotation in a data-angle attribute. Alternatively, like dragging, you could keep a variable outside.
+ • We apply transforms for rotation (and scale). Note: combining rotate and scale in one transform string is fine, but you have to be careful with order (in CSS, transform order matters). Here we do rotate then scale.
+
+For pinch zoom specifically, you might ignore rotation and only handle scale:
+
+interact('.zoom-target').gesturable({
+  listeners: {
+    move(event) {
+      let scale = (event.target.dataset.scale && parseFloat(event.target.dataset.scale)) || 1;
+      scale *= event.ds; // event.ds = change in scale since last event [oai_citation_attribution:33‡interactjs.io](https://interactjs.io/docs/gesturable/#:~:text=properties%3A)
+      event.target.style.transform = `scale(${scale})`;
+      event.target.dataset.scale = scale;
+    }
+  }
+});
+
+This would make an element zoom in/out as you pinch. We use event.ds (delta scale) which gives the incremental change since last event, multiplying it to a stored scale value.
+
+Gesture Event Properties: Gesture events (gesturestart, gesturemove, gestureend) provide:
+ • event.distance: The distance between the two touch points.
+ • event.angle: The angle (in degrees) between the touch points.
+ • event.da: Change in angle since previous event ￼.
+ • event.scale: Ratio of current distance to starting distance (at gesturestart) ￼.
+ • event.ds: Change in scale since last event.
+ • Plus the common properties (like event.target, etc.). Typically, you use event.da and event.ds for smooth continuous updates.
+
+When using gestures, remember to set touch-action: none in CSS on the target to prevent the browser’s default pinch-zoom (on mobile) or other gestures from interfering ￼.
+
+Using Modifiers: Snapping and Restricting Movement
+
+Modifiers in Interact.js are plugins that alter the behavior of drag/resize events, often to enforce constraints. Two of the most commonly used modifiers are snapping and restrict:
+ • Snapping: Make the drag or resize snap to a grid or specific points.
+ • Restrict: Limit the area within which an element can be dragged or resized (e.g., within parent bounds or a certain region).
+
+Modifiers are added via a modifiers array in the draggable/resizable options.
+
+Snap to Grid Example: Suppose we want a draggable element to snap to a 50x50 pixel grid.
+
+import { interact } from 'interactjs';  // ensure we have interact.modifiers available
+
+const gridSize = 50;
+interact('.drag-item').draggable({
+  modifiers: [
+    interact.modifiers.snap({
+      targets: [ interact.snappers.grid({ x: gridSize, y: gridSize }) ],
+      range: Infinity,
+      offset: { x: 0, y: 0 }
+    })
+  ],
+  listeners: { ... }
+});
+
+Here we use interact.modifiers.snap({...}) with a target of interact.snappers.grid({ x: 50, y: 50 }) ￼. This means the drag coordinates will snap to the nearest 50px grid lines. range: Infinity means it will always snap (no maximum distance – by default snapping might only engage when close to a target, but Infinity ensures it always snaps). We also set an offset (or you could use relativePoints) to align the snapping grid to the element’s top-left. By default, the grid will align such that (0,0) on the page is a snap point; if your container is offset or you want a different alignment, you adjust offset.
+
+After adding this modifier, the event.dx/dy in your move listener will already reflect snapped movement – you don’t need to do extra math; the modifier adjusts the event coordinates. For example, if you try to drag 10px but grid is 50px, event.dx might jump to 50px on first move, etc.
+
+Restrict Movement Example: To restrict dragging within a container element:
+
+interact('.drag-item').draggable({
+  modifiers: [
+    interact.modifiers.restrict({
+      restriction: '.container',   // CSS selector of parent/container
+      endOnly: true,               // apply restriction only at end, or false to apply during drag
+    })
+  ],
+  listeners: { ... }
+});
+
+This uses the restrict modifier to keep the draggable within the element matching .container ￼. If endOnly were false (the default is false, meaning restriction is continuous), the draggable would never leave the container while dragging. If endOnly: true, the user can drag out but when they drop (dragend), the final position will be adjusted to be inside the restriction (useful if you want to allow some leeway or overlay effect but snap back on release).
+
+You can also restrict to coordinates or an element rect. restriction can accept an element, a selector, or an object like {x: 0, y: 0, width: 800, height: 600} for a fixed area.
+
+Multiple Modifiers: You can use multiple modifiers together. For instance, snapping and restricting:
+
+interact(element).draggable({
+  modifiers: [
+    interact.modifiers.restrict({ restriction: 'parent' }),
+    interact.modifiers.snap({ targets: [interact.snappers.grid({ x: 50, y: 50 })] })
+  ]
+});
+
+Modifiers are executed in order; the order can matter. Typically you’d restrict first, then snap, but it depends on the effect (snapping first then restricting might slightly shift the snap if the point is outside bounds). In practice, experiment to see which order yields desired behavior ￼.
+
+Other available modifiers include:
+ • interact.modifiers.aspectRatio – to enforce a specific aspect ratio on resizable (or even draggable) interactions (commonly used for resizable to maintain shape).
+ • interact.modifiers.restrictSize – to set min/max width/height for resizes.
+ • interact.modifiers.restrictEdges – a more advanced way to restrict movement on specific edges.
+ • interact.modifiers.snapEdges – to snap a specific edge or corner to a grid or point.
+
+These can be combined as needed for advanced interactions.
+
+Dropzones (Drag and Drop)
+
+If you want to implement drag-and-drop behavior (moving an element and dropping it onto another element to perform some action), Interact.js supports this via dropzone functionality. You designate certain elements as drop targets using .dropzone() and configure what happens on drop.
+
+Basic Dropzone Example:
+
+// Make an element draggable
+interact('.draggable-card').draggable({
+  listeners: { move(/*...*/){ /*move logic*/ } },
+  inertia: true
+});
+
+// Designate another element as a dropzone
+interact('.drop-area').dropzone({
+  accept: '.draggable-card',       // only accept elements with this selector
+  overlap: 0.5,                    // require 50% overlap for a drop to be counted
+  ondropactivate(event) {
+    // highlight dropzone when a drag starts
+    event.target.classList.add('drop-active');
+  },
+  ondragenter(event) {
+    // pointer dragged into dropzone
+    event.target.classList.add('drop-target');
+    event.relatedTarget.classList.add('can-drop');
+  },
+  ondragleave(event) {
+    // dragged pointer leaves the dropzone area
+    event.target.classList.remove('drop-target');
+    event.relatedTarget.classList.remove('can-drop');
+  },
+  ondrop(event) {
+    // final drop happened
+    console.log(`${event.relatedTarget.id} dropped into ${event.target.id}`);
+  },
+  ondropdeactivate(event) {
+    // remove active dropzone highlighting
+    event.target.classList.remove('drop-active');
+    event.target.classList.remove('drop-target');
+  }
+});
+
+In this scenario:
+ • We call .draggable() on .draggable-card to enable dragging (with inertia for a nicer feel).
+ • We call .dropzone(...) on .drop-area to make it a drop target. The options:
+ • accept: A CSS selector (or element) to filter which draggables can drop here. In this case, only elements of class .draggable-card will be recognized. If an element that doesn’t match tries to drop, the drop events won’t fire for this dropzone ￼.
+ • overlap: How much of the draggable must overlap the dropzone to count as a drop. We set 0.5 which means the draggable must cover at least 50% of the dropzone’s area ￼. You could also use 'pointer' (default, just check pointer position) or 'center' (draggable’s center must be in dropzone) ￼.
+ • We then define event handlers: ondropactivate fires when a drag that is eligible for this dropzone starts (we add a highlight to indicate the drop area is active) ￼. ondragenter fires when a draggable enters the dropzone area (we add classes to indicate a potential drop target and change the draggable’s appearance to show it can be dropped). ondragleave fires when it leaves. ondrop fires on a successful drop (we handle the dropped item – e.g., move DOM elements or update state). ondropdeactivate fires at the end to clean up ￼.
+
+Under the hood, Interact.js is tracking the draggable and dropzone. Note that Interact.js does not automatically move the dragged element into the dropzone or change the DOM hierarchy ￼ ￼. If you want the dragged element to “live” inside the dropzone after drop, you must manually append or position it there in the ondrop handler. The events give you event.relatedTarget (the dragged element) and event.target (the dropzone element) so you can manipulate them as needed ￼.
+
+Multiple Dropzones: A draggable can have multiple dropzones. The dragenter/dragleave events will fire for each dropzone as you move through them. You can check event.target to know which dropzone is triggered. Ensure accept rules are set such that only intended targets react.
+
+Dropzone Checker (Advanced): Instead of or in addition to accept and overlap, you can provide a custom checker function to decide if a drop is valid. This is useful for complex scenarios (e.g., based on runtime conditions). See Interact.js docs for .dropzone({ checker: function(...) { ... } }) usage ￼ ￼.
+
+Other Useful Options and Features
+ • Inertia: We enabled it in the dropzone example. Setting inertia: true on draggable or resizable gives a smooth “throw” effect – when the user releases, the element will continue moving a bit and then slow to a stop, imitating physical inertia ￼. You can configure inertia (e.g., duration, resistance) if needed. It’s great for user experience but note it adds some after-effects you have to account for (the dragend event will fire after inertia finishes, not immediately on release).
+ • Auto-Scroll: If you have a scrollable container or page, Interact.js can auto-scroll it when a draggable is near the edge during drag. This is enabled via the autoScroll option. For example:
+
+interact(element).draggable({
+  autoScroll: {
+    container: document.querySelector('.scrollable-container'),
+    margin: 50,
+    speed: 300
+  }
+})
+
+This will scroll the container when the pointer is within 50px of its edge, at a speed of 300px/sec. This is very useful for dragging something across a scrollable list or page.
+
+ • Allow From / Ignore From: These options let you fine-tune where a drag/resize can be initiated. allowFrom specifies a CSS selector for a child element that permits starting the action (like a handle). ignoreFrom specifies elements that should not start the action ￼. For example, if your draggable box contains a button that users might click (and you don’t want drags to start when they click the button), use ignoreFrom: 'button' in your draggable options. Conversely, you could have a small handle icon and use allowFrom: '.handle' to only drag when the user grabs that handle. This improves usability in complex UIs.
+ • Manual Start: By default, as soon as the user presses and moves the pointer, a drag or resize starts. You can require a manual start, which means you would call the Interaction.start() method yourself to begin the action. This is advanced, but note that there’s also a hold option which will delay start until the pointer is held down for a certain amount of time ￼. For example, interact(element).draggable({ hold: 500 }) would only start dragging after ~500ms press, which can prevent accidental drags.
+ • Max Interactions: Interact.js allows multiple elements to be interacted with simultaneously by default. If you want to limit this (globally or per element), you can use interact.maxInteractions() or the per-interactable max option ￼. For instance, interact.maxInteractions(1) globally limits to one concurrent interaction (no multi-touch or multi-drag at the same time). Or interact('.item').draggable({ max: 1 }) would ensure only one pointer can drag elements of that class at once ￼. By default, maxPerElement: 1 which means a single element can’t have two pointers dragging it simultaneously ￼ (you usually keep that).
+ • Callback vs .on(): In examples, we used the listeners: { move() { ... } } style. You can also attach listeners separately using the .on() method. For example:
+
+interact(element)
+  .draggable({ /*options without listeners*/ })
+  .on('dragmove', event => { ... })
+  .on('dragend', event => { ... });
+
+This is equivalent and sometimes handy to separate configuration from logic. Additionally, you can use .off() to remove listeners.
+
+With these basics – dragging, resizing, gestures, modifiers, dropzones – you can implement a wide range of interactions. Next, we’ll delve into the full API to see all available methods and options in detail, followed by some practical tutorials to cement these concepts.
+
+⸻
+
+README-API.md
+
+Interact.js API Reference
+
+Interact.js provides a fluent API centered around the interact function and the Interactable objects it returns. Below is a breakdown of the main classes, methods, and configuration options available, along with brief examples.
+
+Global interact Function and Global Methods
+
+The interact(target) function is the entry point. It accepts a CSS selector string, a single DOM Element, or an array of elements. It returns an Interactable instance that represents that target (or set of targets). Once you have an Interactable, you can enable actions like draggable, etc., and attach event listeners.
+
+Example: const dragItem = interact('.drag-item') – now dragItem is an Interactable for all elements with class drag-item.
+
+There are also some global configuration methods on the interact object:
+ • interact.maxInteractions(newValue?) – Get or set the maximum number of interactions allowed at one time ￼. By default this is unlimited (Infinity). If you pass a number (e.g., interact.maxInteractions(1)), it will limit the total simultaneous active gestures/drags across the page.
+ • interact.pointerMoveTolerance(newValue?) – Get/set the distance (in pixels) the pointer must move before it’s considered a drag/resize start. This helps ignore tiny jitters. Default is often a few pixels.
+ • interact.debug() – Returns an object for debugging internal states (mostly for development).
+ • interact.stop() – Programmatically stop all ongoing interactions (useful in certain cases if you need to cancel interactions).
+
+Interactable Object and Action Methods
+
+An Interactable is returned by interact(target). It has methods to enable or configure different actions:
+ • interactable.draggable(options) – Enable or disable dragging on this interactable. Pass true to enable with default settings, false to disable, or an options object to enable with specific settings ￼ ￼.
+ • interactable.resizable(options) – Similarly, enable/disable resizing on this interactable ￼ ￼.
+ • interactable.gesturable(options) – Enable multi-touch gestures on this interactable.
+ • interactable.dropzone(options) – Make this interactable a dropzone (to accept dropped draggables) ￼.
+ • interactable.on(eventName, listener) – Add an event listener for this interactable. You can use event names like 'dragmove', 'resizestart', 'gesturemove', 'down', 'tap', etc. (See Events section below for a list). You can also pass an object where keys are event names and values are listener functions, or an array of event names as the first argument ￼.
+ • interactable.off(eventName, listener) – Remove an event listener.
+ • interactable.set(options) – A shorthand to apply multiple options at once. For example, you can pass an object containing keys like { draggable: true, dropzone: { accept: '.foo' }, ... } to configure many aspects in one go.
+ • interactable.unset() – Destroy this interactable: remove all listeners and remove it from memory ￼. This is important for cleanup (for example, call this when a Vue component is unmounted to avoid memory leaks).
+ • interactable.origin(value) – Get/set the origin for coordinate calculations. By default, it’s either the page origin or the element’s top-left (origin: 'self' can be used to treat the element’s top-left as (0,0) for that element’s coordinates ￼). You might adjust origin when working with SVG or canvases.
+ • interactable.ignoreFrom(value) / interactable.allowFrom(value) – These correspond to the ignoreFrom and allowFrom options, but as methods if you want to set them separately.
+ • interactable.options – This property holds all configuration options (grouped by action). You typically won’t need to access it directly, except for reading current settings.
+
+The options object you pass to draggable(), resizable(), or gesturable() can include the following common fields (in addition to any action-specific ones):
+
+Option Name Type Description
+listeners Object or Function Event listeners for this action’s events. You can specify an object with keys 'start', 'move', 'end' (and in the case of gestures also 'inertiastart' if inertia is enabled), or use the onstart/onmove shorthand ￼.
+enabled Boolean Whether this action is enabled. (True by default when you call the method with an object or true. You can set to false to temporarily disable without fully unsetting.)
+manualStart Boolean If true, don’t auto-start the action on pointer move – you will start it via code (using interact.interactions.start(...)) ￼. Default is false (auto start on drag).
+max Number Maximum number of simultaneous interactions on this Interactable (for this action). Default Infinity (no limit) ￼. Example: interactable.draggable({ max: 2 }) would allow at most 2 pointers to drag two separate elements of this Interactable at once.
+maxPerElement Number Max number of interactions per individual element (target) for this Interactable. Default is 1 ￼ (so one element can only be dragged by one pointer at a time). Increase if you want, for example, two pointers to drag the same element (unusual).
+inertia Boolean or Object Enable inertia (throwing effect). true to use default settings, or an object to configure parameters like { resistance, minSpeed, endSpeed, allowResume, smoothEndDuration } ￼.
+modifiers Array Array of modifiers to apply (snap, restrict, etc.) for this action. Use interact.modifiers.* to create them. They will only affect this Interactable’s events for that action ￼.
+origin String or Element or Object The origin for coordinates (e.g., 'self' or an element or { x: number, y: number }). Default is the same as used in interact(target) call or 'parent'/page origin. Often left default.
+allowFrom String or Element CSS selector or element that is the only place a drag/resize can start (acts as handle) ￼. If the user’s pointer down target doesn’t match this, the action won’t start.
+ignoreFrom String or Element CSS selector or element that will prevent the action from starting if the pointer down target is within this element ￼. Useful to exclude certain parts of an element.
+cursorChecker Function A function to dynamically set the cursor. By default, Interact.js sets cursors like move or nwse-resize on the <body> during interactions for feedback. You can override with a custom function that returns a CSS cursor string.
+
+There are also action-specific options:
+ • Drag options: e.g., startAxis and lockAxis. startAxis can be 'x', 'y', or 'xy' (default). If set to 'x', then a drag will only start if the initial movement is mostly horizontal; 'y' for vertical ￼. lockAxis can be used to lock the drag movement to one axis – if set to 'x', the element will only move horizontally (any vertical movement is ignored) ￼. If 'start', it will lock to the axis in which the drag motion started (determined by whether the initial move was more horizontal or vertical) ￼.
+ • Resize options: e.g., squareResize (in older versions) is replaced by using the aspectRatio modifier. There’s also an edges option (as we used) or an alternative handles array for specifying specific elements as resize handles.
+ • Gesture options: mainly just enabled or any custom gestures you want to differentiate (usually not needed; the defaults handle pinch/rotate together).
+
+Events and Listeners
+
+Interact.js emits a variety of events. You can listen to events either by specifying listeners in the action options or by calling .on() on an Interactable (or even interact.on() for global events).
+
+Pointer Events: Low-level events for pointer interactions:
+ • down, move, up – correspond to mousedown/touchstart, mousemove/touchmove, mouseup/touchend.
+ • tap – fired on a quick tap/click (no drag).
+ • doubletap – double-click (two taps in quick succession).
+ • hold – fired if pointer is held down without moving for a certain duration (default ~600ms, configurable via pointerEvents({ holdDuration: ... })) ￼ ￼.
+
+Drag Events: When draggable is enabled:
+ • dragstart
+ • dragmove
+ • draginertiastart (if inertia is enabled and drag is thrown)
+ • dragend
+
+Resize Events: When resizable is enabled:
+ • resizestart
+ • resizemove
+ • resizeinertiastart (with inertia)
+ • resizeend
+
+Gesture Events: When gesturable is enabled:
+ • gesturestart
+ • gesturemove
+ • gestureend
+
+Dropzone Events: For dropzone interactables:
+ • dropactivate – a draggable that is accepted by this dropzone has started (could activate visual cues) ￼.
+ • dropdeactivate – that draggable’s interaction ended (regardless of drop success).
+ • dragenter – a draggable has entered the dropzone (repeated if it leaves and re-enters) ￼.
+ • dragleave – a draggable left the dropzone.
+ • dropmove – a draggable is moving within the dropzone.
+ • drop – a draggable was dropped successfully onto the dropzone (drop condition met) ￼ ￼.
+
+When handling drop events, event.relatedTarget is the dragged element and event.target is the dropzone ￼.
+
+Each Interact.js event object (like the event passed to listeners) has the following common properties (in addition to type-specific ones):
+ • event.type – the event type string (e.g., "dragmove").
+ • event.target – the element being interacted with (for high-level drag/resize events) ￼.
+ • event.currentTarget – in case of pointer events, the element on which the listener was bound.
+ • event.interactable – the Interactable object.
+ • event.interaction – the low-level Interaction instance (could be useful for advanced control).
+ • event.timeStamp – timestamp of the event.
+ • Coordinates: event.pageX, event.pageY (absolute page coords) and event.clientX, clientY (viewport coords) for the pointer position.
+ • event.dx, event.dy – change in x/y from the last move event ￼ (0 on start).
+ • event.velocityX, event.velocityY and event.speed – velocity of the pointer at this event ￼.
+
+Specific event types add more:
+ • Drag events: event.dragEnter / dragLeave (if using dropzones, these tell you dropzone interactions) ￼.
+ • Resize events: event.rect (object with { top, left, bottom, right, width, height }) representing the element’s new size/position ￼, and event.deltaRect (change in those since last event) ￼, plus event.edges indicating which edges were active ￼.
+ • Gesture events: event.distance, event.angle, event.da (delta angle), event.scale, event.ds (delta scale) as discussed ￼.
+
+Event Listening Patterns: You can attach multiple events at once by space-delimited string or array:
+
+interactable.on('dragmove dragend', function(event) { ... });
+interactable.on(['resizemove','resizeend'], function(event) { ... });
+
+You can also remove listeners with .off similarly.
+
+Utilities and Miscellanea
+ • interact.snappers – This is an object with utility functions for snapping targets. We saw interact.snappers.grid({ x, y }) which returns a function that calculates snap points on a grid ￼. There are also snappers for other shapes, but grid is most common.
+ • interact.modifiers – Namespace for built-in modifiers. The key ones include snap, snapSize, snapEdges, restrict, restrictRect, restrictSize, restrictEdges, aspectRatio. Each is used by calling, e.g., interact.modifiers.restrict({...}) and passing the result in the modifiers array. Modifiers can have their own options (like endOnly, enabled, etc., depending on type).
+ • InteractEvent Class – All events like DragEvent, ResizeEvent etc. inherit from InteractEvent. Typically you don’t need to instantiate these; you just handle them in listeners. If needed, you can inspect event instanceof InteractEvent.
+ • AutoStart and Dev Tools – By default, Interact.js auto-starts actions when the pointer moves enough. There is an interact.autoScroll global config and the @interactjs/dev-tools plugin which can provide warnings in development. These are advanced topics; the dev-tools plugin can warn if you forgot to set touch-action: none on an element, for example. It’s not used in production builds ￼.
+
+This API overview should give you a reference for what methods and options are available. For more detail on each method, the official documentation and TypeScript definitions (which you can find in node_modules/interactjs/types/) are useful. In the next section, we will walk through some tutorials to apply this API in real scenarios, especially focusing on building a draggable and resizable grid system in Vue 3.
+
+⸻
+
+README-Tutorials.md
+
+Tutorials and Implementation Guides
+
+In this section, we will go through step-by-step tutorials for several real-world scenarios using Interact.js with Vue 3 and TypeScript. Each tutorial builds on the concepts discussed earlier, with a focus on a draggable/resizable grid system as a more advanced example.
+
+Tutorial 1: Basic Draggable Box
+
+Goal: Create a simple Vue component with a box that can be dragged around within its parent container.
+
+Steps:
+
+ 1. Set up the Component: Create a Vue component (e.g., DraggableBox.vue). In the template, add a div for the box:
+
+<template>
+  <div ref="box" class="box">Drag me!</div>
+</template>
+
+And some basic styling in <style> (give it a size, background, etc., and importantly position: absolute if contained in a non-body parent, so it can move):
+
+.box {
+  width: 100px; height: 100px;
+  background: lightcoral;
+  position: absolute;
+  touch-action: none; user-select: none;
+}
+
+We use absolute positioning so we can freely move it within a container. The CSS ensures it won’t scroll or select text on touch.
+
+ 2. Import and initialize Interact.js: In the script, import interact and setup the draggable on mount.
+
+<script setup lang="ts">
+import { onMounted, ref } from 'vue';
+import interact from 'interactjs';
+const box = ref<HTMLElement|null>(null);
+onMounted(() => {
+  if (box.value) {
+    interact(box.value).draggable({
+      listeners: {
+        move(event) {
+          // Update position
+          const target = event.target;
+          // keep track of drag positions using data attributes
+          const x = (parseFloat(target.getAttribute('data-x')||'0')) + event.dx;
+          const y = (parseFloat(target.getAttribute('data-y')||'0')) + event.dy;
+          // apply translation
+          target.style.transform = `translate(${x}px, ${y}px)`;
+          // store new positions
+          target.setAttribute('data-x', x.toString());
+          target.setAttribute('data-y', y.toString());
+        }
+      }
+    });
+  }
+});
+</script>
+
+Explanation: We store the element’s coordinates in data-x and data-y attributes. Initially, these are 0 (we treat the starting position as (0,0)). On each drag move, event.dx/dy give the change – we add that to the stored values and apply a CSS transform translate. This moves the box incrementally. We then update the stored data attributes for the next event. This way, the box moves with the cursor.
+
+ 3. Test and refine: When you run the app, you should be able to click and drag the box around. If it’s not moving:
+ • Check that the element has touch-action: none; in CSS (for touch devices).
+ • Ensure the script ran (the component was mounted). If using <script setup> as above, it should work automatically.
+ • Open the console to see if any errors (like not finding the element or interact not imported correctly).
+ • If the box moves but “jumps back” on each drag, it means the position isn’t being accumulated correctly. Using the data attribute method as above prevents that jump.
+ 4. Constraint (optional): To restrict dragging within the parent (say the parent is a container element of fixed size), you can add a restrict modifier:
+
+interact(box.value).draggable({
+  modifiers: [ interact.modifiers.restrict({ restriction: 'parent' }) ],
+  listeners: { move(/*...*/) { ... } }
+});
+
+This will keep the box from going outside its parent boundaries.
+
+Now you have a basic draggable component. This pattern of using data-x/data-y for storing transform positions is common and will be reused for more complex examples.
+
+Tutorial 2: Resizable Element with Snap to Grid
+
+Goal: Create an element that the user can resize by dragging from its edges, with the resizing snapping to a grid (for uniform increments).
+
+Steps:
+
+ 1. Component Setup: Similar to before, create (or reuse) a component with a target element:
+
+<div ref="panel" class="panel">Resize me</div>
+
+Style it with a border or handles for clarity:
+
+.panel {
+  width: 150px; height: 150px;
+  background: lightblue;
+  position: relative;
+  touch-action: none; user-select: none;
+}
+/*optional: visual resize handles at corners*/
+.panel::after {
+  content: "";
+  position: absolute; bottom: 0; right: 0;
+  width: 15px; height: 15px;
+  background: darkblue;
+  cursor: se-resize;
+}
+
+Here we made a pseudo-element at bottom-right as a visual handle (for UX). cursor: se-resize gives a diagonal arrow cursor when hovering that corner.
+
+ 2. Enable Resizing with Snap: In the script:
+
+import interact from 'interactjs';
+const panel = ref<HTMLElement|null>(null);
+onMounted(() => {
+  if (panel.value) {
+    interact(panel.value).resizable({
+      edges: { top: true, left: true, bottom: true, right: true },
+      modifiers: [
+        interact.modifiers.snap({
+          targets: [ interact.snappers.grid({ x: 20, y: 20 }) ],
+          range: Infinity,  // always snap
+          offset: { x: 0, y: 0 }
+        })
+      ],
+      listeners: {
+        move(event) {
+          // similar to earlier: get data-* for x,y or default 0
+          const target = event.target;
+          let x = (parseFloat(target.getAttribute('data-x')||'0'));
+          let y = (parseFloat(target.getAttribute('data-y')||'0'));
+          // update element size
+          target.style.width  = `${event.rect.width}px`;
+          target.style.height = `${event.rect.height}px`;
+          // translate when resizing from top/left edges
+          x += event.deltaRect.left;
+          y += event.deltaRect.top;
+          target.style.transform = `translate(${x}px, ${y}px)`;
+          target.setAttribute('data-x', x.toString());
+          target.setAttribute('data-y', y.toString());
+        }
+      }
+    });
+  }
+});
+
+Explanation: We enabled resizing on all edges (top, left, bottom, right). We added a snap modifier with a 20x20 grid – this means the element’s new width/height will snap to multiples of 20px. (It also snaps the position via deltaRect, ensuring the edges align to the grid.) In the move listener, we update width and height based on event.rect. We also adjust x and y if the top or left edges moved (event.deltaRect.left/top would be non-zero if the left or top edge was dragged, meaning the element’s position shifted). We then apply the transform translate to keep the element in the correct spot and store the new x,y. The result is that as you resize, the panel’s size jumps in 20px increments, and it stays aligned.
+
+ 3. Test the Snap: Try resizing the panel. You should see it “jump” in steps of 20px rather than smoothly, and the guide or grid effect will be apparent if you overlay a 20px grid background. Adjust the grid size to your liking. If you want a finer or coarser snap, change the { x: 20, y: 20 }. If you want snapping only at the end of resize, you could use endOnly: true in the snap modifier (so the element would resize freely during drag, but on release it snaps to the nearest grid).
+ 4. Maintain Aspect Ratio (Optional): If you wanted the panel to maintain a square shape, you could add the aspectRatio modifier:
+
+interact.modifiers.aspectRatio({ ratio: 'preserve' })
+
+This ensures the aspect ratio when resizing remains whatever it was at start (effectively locking width/height proportion). You’d include it in the modifiers array. Or specify a number like { ratio: width/height }.
+
+Now you have a panel that can be resized by dragging its edges/corners, snapping to a grid. This is a building block for grid systems or resizable layouts.
+
+Tutorial 3: Drag and Drop (Reorderable List Example)
+
+Goal: Use draggable and dropzone to create a simple list of items that can be reordered by dragging and dropping.
+
+Scenario: You have a list of items (e.g., tasks in a todo list). You want to drag an item and drop it above or below another to reorder.
+
+Steps:
+
+ 1. HTML structure: For simplicity, suppose each item is a div in a container:
+
+<div class="list">
+  <div class="list-item" v-for="item in items" :key="item.id" :id="item.id">
+    {{ item.text }}
+  </div>
+</div>
+
+The .list container holds .list-item elements.
+Style .list-item with user-select: none; and maybe a border. They could be relatively positioned; we might not need absolute here because we can allow dragging all over and using dropzones to reorder (the original DOM order will determine placement).
+
+ 2. Make items draggable: In script:
+
+onMounted(() => {
+  interact('.list-item').draggable({
+    inertia: true,
+    listeners: {
+      move(event) {
+        // We will use absolute positioning while dragging
+        event.target.style.position = 'absolute';
+        event.target.style.zIndex = '1000';
+        // move with translate
+        event.target.style.transform =
+          `translate(${event.pageX - event.target.offsetWidth/2}px, ${event.pageY - event.target.offsetHeight/2}px)`;
+      },
+      end(event) {
+        // Reset styles after drop
+        event.target.style.transform = '';
+        event.target.style.position = '';
+        event.target.style.zIndex = '';
+      }
+    }
+  });
+});
+
+This snippet makes all .list-item elements draggable. On move, we set the position to absolute and translate the item to follow the pointer (centering it under the cursor for a nicer feel). On end, we remove the transform and positioning so that it falls back into the document flow at its new place (assuming we move the DOM node on drop).
+
+ 3. Setup dropzones: We want each list item to act as a dropzone to catch drops above/below it. One strategy: use two drop targets for each item – one area above it, one below it. For simplicity, we’ll treat each .list-item itself as a dropzone (meaning drop onto an item to place the dragged item above it).
+
+interact('.list-item').dropzone({
+  accept: '.list-item',  // accept other list items
+  overlap: 0.5,
+  ondragenter(event) {
+    const dropItem = event.target;
+    dropItem.classList.add('drop-hover');
+  },
+  ondragleave(event) {
+    event.target.classList.remove('drop-hover');
+  },
+  ondrop(event) {
+    const dropItem = event.target;
+    const draggedItem = event.relatedTarget;
+    // Swap or reorder items in DOM or data
+    const list = dropItem.parentNode;
+    // Insert the dragged item before the drop target
+    list.insertBefore(draggedItem, dropItem);
+  }
+});
+
+We configure each item as a dropzone that accepts the same type (other items). We highlight it on dragenter (maybe with a CSS class that changes background). On drop, we perform a simple DOM manipulation: get the parent .list and insert the dragged item node before the drop target item. This effectively moves the dragged item in the DOM to that new position.
+
+ 4. Data consistency: If your list is generated from an array (items), after reordering DOM you should also update the array to reflect the new order. In ondrop, instead of directly manipulating DOM, you might update your Vue data (like using the indexes of drop and dragged items to swap elements in the array), and let Vue re-render the list. Doing that ensures the source of truth (the data) is updated. The DOM swap approach works, but bypasses Vue’s reactivity.
+ 5. Test reordering: Drag an item over another; when the pointer is over the middle of another item, that item should highlight, and releasing should drop the dragged item above it. You can expand this idea to have a visual placeholder. For example, on dragenter you could create a blank space indicating where the item will land.
+
+This tutorial demonstrates using dropzones for reordering. This is a simplistic implementation (real reorder lists often handle more edge cases, like dragging to empty space at end, etc.), but it shows how Interact.js can be used for sortable interfaces.
+
+Tutorial 4: Building a Draggable & Resizable Grid Layout (Advanced)
+
+Now for the main event: a draggable, resizable grid system in Vue 3. This is akin to a dashboard where widgets can be rearranged and resized on a grid (similar to libraries like Gridster or Vue Grid Layout). We will outline how to build a basic version of this using Interact.js.
+
+Goal: We have a grid (say 12 columns) and various widgets that occupy some cells. Users can drag widgets to new positions and resize them to cover more or fewer grid cells. Movement and resizing should snap to the grid. We should also avoid collisions (prevent overlapping widgets).
+
+Steps:
+
+ 1. Define the Grid and Item Data:
+Decide how to represent positions. For example, if we have a 12-column grid and variable rows, we might represent each widget as an object with properties { id, x, y, w, h } – where (x,y) is the top-left cell coordinate (e.g., x=0..11, y=row index), and w,h are width and height in grid cell units. For simplicity, let’s say each cell is 100x100 pixels. We will map these to pixel positions.
+
+const gridCols = 12;
+const cellSize = 100; // px
+const widgets = ref([
+  { id: 'w1', x: 0, y: 0, w: 3, h: 2, name: 'Widget 1' },
+  { id: 'w2', x: 3, y: 0, w: 3, h: 1, name: 'Widget 2' },
+  // ... more widgets
+]);
+
+This is our reactive state for widget positions.
+
+ 2. Grid Template:
+We create a container for the grid and loop through widgets:
+
+<div class="grid-container" ref="gridContainer">
+  <div v-for="item in widgets" :key="item.id" class="grid-item"
+       :data-id="item.id"
+       :style="{
+         width: item.w * cellSize + 'px',
+         height: item.h * cellSize + 'px',
+         transform: 'translate(' + item.x * cellSize + 'px,' + item.y * cellSize + 'px)'
+       }">
+    {{ item.name }}
+  </div>
+</div>
+
+Each .grid-item is absolutely positioned within .grid-container via transform. We set its size and position based on the grid coordinates multiplied by cellSize. The container .grid-container should be position: relative; .grid-item can be position: absolute (since we use transform, absolute isn’t strictly required, but setting absolute helps if we want to use top/left instead of transform).
+CSS for .grid-container might define a width (e.g., 1200px for 12 columns * 100px each) and a min-height. .grid-item style should include touch-action: none; user-select: none; cursor: move; etc.
+
+ 3. Make Grid Items Draggable & Resizable:
+In onMounted, we attach interact to .grid-item elements:
+
+onMounted(() => {
+  // Draggable
+  interact('.grid-item').draggable({
+    modifiers: [
+      interact.modifiers.snap({
+        targets: [ interact.snappers.grid({ x: cellSize, y: cellSize }) ],
+        range: Infinity,
+        offset: 'startCoords'  // align snapping to initial position of element
+      }),
+      interact.modifiers.restrict({ restriction: gridContainer.value })
+    ],
+    listeners: {
+      move(event) {
+        const target = event.target;
+        // current translation from transform
+        let x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+        let y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+        target.style.transform = `translate(${x}px, ${y}px)`;
+        target.setAttribute('data-x', x);
+        target.setAttribute('data-y', y);
+      },
+      end(event) {
+        // On drop, update the widget's grid coordinates in state
+        const id = event.target.getAttribute('data-id');
+        // calculate grid coords from final pixel position
+        const finalX = parseFloat(event.target.getAttribute('data-x')) || 0;
+        const finalY = parseFloat(event.target.getAttribute('data-y')) || 0;
+        const gridX = Math.round(finalX / cellSize);
+        const gridY = Math.round(finalY / cellSize);
+        const widget = widgets.value.find(w => w.id === id);
+        if (widget) {
+          widget.x = gridX;
+          widget.y = gridY;
+        }
+        // reset the transform and data-attributes
+        event.target.style.transform =
+          `translate(${gridX * cellSize}px, ${gridY * cellSize}px)`;
+        event.target.removeAttribute('data-x');
+        event.target.removeAttribute('data-y');
+      }
+    }
+  });
+  // Resizable
+  interact('.grid-item').resizable({
+    edges: { left: true, right: true, top: true, bottom: true },
+    modifiers: [
+      interact.modifiers.snap({
+        targets: [ interact.snappers.grid({ x: cellSize, y: cellSize }) ],
+        range: Infinity,
+        offset: 'startCoords'
+      }),
+      interact.modifiers.restrictEdges({
+        outer: gridContainer.value, endOnly: true
+      })
+    ],
+    listeners: {
+      move(event) {
+        const target = event.target;
+        // Compute new width/height in pixels from event.rect
+        let newWidth  = event.rect.width;
+        let newHeight = event.rect.height;
+        target.style.width  = newWidth + 'px';
+        target.style.height = newHeight + 'px';
+        // Also move if top/left edges were dragged
+        let x = (parseFloat(target.getAttribute('data-x')) || 0) + event.deltaRect.left;
+        let y = (parseFloat(target.getAttribute('data-y')) || 0) + event.deltaRect.top;
+        target.style.transform = `translate(${x}px, ${y}px)`;
+        target.setAttribute('data-x', x);
+        target.setAttribute('data-y', y);
+      },
+      end(event) {
+        // Update the widget's w,h (grid size) in state
+        const id = event.target.getAttribute('data-id');
+        const finalW = parseFloat(event.target.style.width);
+        const finalH = parseFloat(event.target.style.height);
+        const gridW = Math.round(finalW / cellSize);
+        const gridH = Math.round(finalH / cellSize);
+        const x = parseFloat(event.target.getAttribute('data-x')) || 0;
+        const y = parseFloat(event.target.getAttribute('data-y')) || 0;
+        const gridX = Math.round(x / cellSize);
+        const gridY = Math.round(y / cellSize);
+        const widget = widgets.value.find(w => w.id === id);
+        if (widget) {
+          widget.w = gridW;
+          widget.h = gridH;
+          widget.x = gridX;
+          widget.y = gridY;
+        }
+        // Snap the element's style to exact grid
+        event.target.style.width  = gridW *cellSize + 'px';
+        event.target.style.height = gridH* cellSize + 'px';
+        event.target.style.transform = `translate(${gridX * cellSize}px, ${gridY * cellSize}px)`;
+        target.removeAttribute('data-x');
+        target.removeAttribute('data-y');
+      }
+    }
+  });
+});
+
+This is a lot, but essentially:
+ • Draggable: We snap to the grid and restrict movement to the container. In move, we update pixel translation as we did in earlier examples. In end, we compute the nearest grid cell coordinates by rounding the final pixel position divided by cellSize. We then update the corresponding widget’s x, y in our reactive state. We also adjust the element’s transform to exactly align to the grid (in case it was mid-cell due to any reason) and clear temporary data attributes.
+ • Resizable: We allow resizing from any edge. We snap the edges to the grid and restrict the outer edges to not go outside the container (restrictEdges with outer: container). In move, we apply the new width/height (pixel values) and also translate the element if the top or left edge moved (similar to earlier). In end, we calculate the new w, h in grid units by rounding the pixel size, and update the widget’s data. Also update x,y in case it moved. Then set the element’s style to the exact snapped grid size and position.
+
+ 4. Collision Handling: With snapping, if two widgets are dragged to the same cells, they will overlap visually. Handling collisions (to prevent overlaps) is complex – one approach is to detect overlap and either disallow drop or push the other widget. A simpler approach: on drag move or end, you can check if the target grid cells are already occupied by another widget. If yes, you could reject the move (e.g., snap back to original). For brevity, we won’t implement full collision resolution here, but you could:
+ • Maintain a 2D array or set of occupied cells (updated whenever widget positions change).
+ • On dragmove, if an item enters an occupied cell, give visual feedback (like red outline).
+ • On dragend, if target position is occupied, either prevent it (reset to original position) or swap positions with the occupant, etc.
+This logic can be quite involved. A simpler alternative is to use the dropzone approach – treat each cell as a dropzone and allow drop only if empty, but managing  dozens of dropzones (for each cell) might be less efficient.
+ 5. Test the Grid:
+When you drag a widget, it should move in 100px increments (snapping to grid cells). When you drop, the reactive widgets data updates, so if you re-render or on next drag it will consider its new position. Resizing similarly snaps to the grid. Try resizing a widget; it will expand or contract to consume whole cells.
+ 6. Reactive Updates:
+Because we update the widgets array on interaction end, the template styles (computed from item.x, item.y, item.w, item.h) will automatically reflect the new positions/sizes if the component re-renders. We manually also set the element’s style at the end of interactions to avoid any visible jank between the drop and Vue’s next render cycle.
+
+Note: This grid system can be further enhanced:
+ • Add guidelines or a grid background for better UX.
+ • Implement a smarter collision handling or a layout algorithm to reposition widgets if one is dropped on another.
+ • Emit events when a widget is moved or resized (so that parent components can save layouts or do additional logic).
+ • Optimize performance for many widgets (our approach attaches one Interactable for all .grid-item via the class selector, which is fine; Interact.js will handle each element).
+
+Despite the complexity, we’ve achieved a basic dashboard-like grid with draggable, resizable widgets using Interact.js and Vue 3.
+
+⸻
+
+README-BestPractices.md
+
+Best Practices and Performance Tips for Interact.js
+
+Using Interact.js effectively involves not just writing the correct code, but also structuring your app and interactions for smooth performance and maintainability. Below are some best practices and common pitfalls to consider:
+
+1. Use Transforms for Movement
+
+When moving elements (dragging), prefer using CSS transform: translate(...) rather than changing absolute left/top positions. Transforms are handled by the GPU and result in smoother animations with less layout thrashing. In our examples, we stored data-x/data-y and applied translate() in the drag move events, which is ideal. Avoid directly setting many style properties that cause reflow (like top, left, width, height) on every mouse move; if you must, batch or throttle them.
+
+2. Limit DOM Queries and Heavy Computation in Move Handlers
+
+Drag and resize move events fire many times per second (for each mouse/touch movement). Keep the logic in these handlers as light as possible. For example, avoid querying the DOM extensively (e.g., document.querySelectorAll inside a move event) or performing complex calculations on every move. If you need expensive checks (like collision detection among many elements), consider using requestAnimationFrame to throttle updates or performing checks on end instead of every move.
+
+3. Apply Needed CSS to Interactable Elements
+
+Always apply:
+ • touch-action: none; and user-select: none; on draggable/resizable elements (and possibly their parent container) ￼. This prevents the browser’s default touch gestures and text selection, which can otherwise cause janky behavior (e.g., page scrolling when trying to drag an element on mobile). Interact.js’s dev-tools will warn if you forget this.
+ • Set appropriate cursors via CSS or the cursorChecker. Interact.js by default changes the cursor on the <body> (e.g., to move or ns-resize when you hover near an edge). If you prefer to handle cursors yourself, you can disable this by interact(target).styleCursor(false) or use a custom cursorChecker to return null ￼ ￼. But generally, the default is helpful.
+
+4. Clean Up on Component Unmount
+
+If you attach Interact.js to elements in a Vue component, make sure to remove or destroy those interactions when the component is destroyed. Not doing so can cause memory leaks or stale event handlers. Two approaches:
+ • Call interact(element).unset() in the Vue onUnmounted hook to remove that element’s interactable ￼.
+ • Or if using a class/selector for multiple, you can call interact(targetSelector).unset() to remove all of them for that selector. (Be careful if that selector is used elsewhere.)
+
+This step is especially important if you dynamically create/destroy components with interactables.
+
+5. Reuse Interactables When Possible
+
+Creating an interactable (interact(selector)) for a class or many elements means all those elements share one configuration. This is efficient. If you need each element to have distinct behavior, you might use separate calls or dynamic creation. But whenever the behavior can be the same, use a single interactable for multiple elements (as we did with .grid-item class). It reduces the overhead of setting up many listeners. Interact.js can handle many elements, but fewer configurations is easier to manage.
+
+6. Tree-Shaking and Bundle Size
+
+If you’re concerned about performance in terms of app size, consider using the scoped packages as mentioned in Installation. Only include what you need. For example, if you only need drag and drop, you might not import the gesture or resize modules. This reduces your JS payload. Also, ensure not to include the @interactjs/dev-tools in production builds, as it adds overhead for debugging hints ￼. If you followed the modular install guide, use the provided Babel plugin or environment checks to drop dev-tools in production.
+
+7. Avoid Frequent re-renders During Interactions
+
+In frameworks like Vue, triggering state updates on every drag move can cause the component to re-render excessively, hurting performance. Instead, update the DOM directly in the move events (as we’ve done using element.style) and only update reactive state at the end of the interaction or at some throttled interval. For example, in the grid tutorial, we updated the Vue widgets state only on dragend/resizeend, not every pixel move. This keeps the Vue reactivity overhead out of the tight loop of pointer moves. If you need live feedback in state, consider debouncing the state updates.
+
+8. Use Appropriate Interaction Options
+
+A few tips on options to avoid pitfalls:
+ • If you notice that clicking on interactive child elements (like a button inside a draggable) triggers a drag when it shouldn’t, use ignoreFrom to exclude those elements ￼. This prevents frustrating UX where everything you click turns into a drag.
+ • If you want to require a long press before drag (to differentiate from a click), use the hold option with a duration ￼. This way quick taps won’t start a drag.
+ • Set maxInteractions globally if you want to limit multi-touch. For example, if your app should only ever have one item dragged at a time (even if two fingers are used), do interact.maxInteractions(1). This can simplify logic and avoid unexpected multi-pointer scenarios.
+ • Use autoScroll when needed to improve UX for large scrollable areas, but disable it if not needed to avoid unnecessary scrolling computations.
+
+9. Testing Across Devices
+
+Because Interact.js abstracts mouse/touch, ensure to test your interactions on both desktop and mobile. Pay attention to touch gestures like pinch zoom (make sure they don’t trigger if not intended due to missing CSS) and ensure the draggable elements are large enough or have handles for touch. Sometimes an interaction that feels fine with a mouse might need larger hit areas for fingers.
+
+10. Maintainability: Modularize Interaction Code
+
+If you have many components using similar Interact.js logic, consider abstracting them. For example:
+ • Write a custom Vue Directive (v-interact-drag) that takes options and sets up the interactable in mounted and cleans up in unmounted.
+ • Or write composable functions (using Vue’s Composition API) that encapsulate the interact setup. This could return refs and manage the onMounted/unmounted logic internally.
+
+This way, if you need to change the interaction behavior, you do it in one place. It also keeps your component code cleaner. However, start simple – only abstract once you see repetition.
+
+11. Common Pitfalls to Avoid
+ • Not updating state on drop: If you move elements purely via transforms and never update your underlying data model, the next time the component renders (or on page refresh), the elements might jump back to their old positions. Always sync the final positions/sizes to your app state if those changes should persist.
+ • Forgetting inertia end event: If using inertia, note that the dragend or resizeend event will fire after the inertia animation completes, not at the moment of release. Interact.js adds a draginertiastart event when inertia kicks in. Make sure your logic (e.g., cleaning up or updating state) accounts for that. If you treat the initial release as final, you might double-handle events.
+ • Interference with CSS frameworks: Some CSS (like Bootstrap’s user-select or touch-action defaults, or draggable attributes on images) might conflict. For instance, <img> tags by default might be draggable by the browser (HTML5 native drag). If you make them interact.js draggable, set draggable="false" on the img to prevent default browser drag image behavior.
+ • Coordinate systems: Be mindful of the difference between page vs client coordinates. If your container is offset or the page is scrolled, pageX vs clientX differ. Interact events provide both. Usually, using event.pageX/Y for absolute positioning, or using transforms as we did, is fine. Just be consistent.
+ • z-index and stacking: When dragging, if the element goes underneath others due to HTML stacking context, consider adding a class on drag start to bring it to front (position: absolute; z-index high). We did this in the list reordering example. Removing it on drop restores normal flow.
+
+By following these best practices, you can create highly interactive interfaces that remain smooth and responsive. Interact.js is quite performant, but it gives you low-level control, so how you implement the interactions will determine the final performance. Always profile if you encounter jank: check if it’s painting, layout, or scripting causing the slowdown and adjust accordingly (e.g., use transforms, throttle events, etc., as discussed).
+
+Recap:
+ • Optimize your event handlers, especially for continuous events.
+ • Use the tools Interact.js provides (snapping, restriction, etc.) rather than reinventing logic manually.
+ • Clean up to prevent leaks.
+ • Keep user experience in mind (don’t forget to disable text selection, etc. to avoid annoyance).
+ • Modularize and reuse your interaction code for easier maintenance as your project grows.
+
+⸻
+
+README-Examples.md
+
+Practical Examples
+
+Here we present a series of standalone code examples demonstrating Interact.js features in different scenarios. Each example includes a brief explanation of what it does.
+
+Example 1: Drag and Drop Grid with Snapping
+
+Scenario: A set of items can be dragged within a container and will snap to a grid layout (e.g., 50px grid). Similar to part of the grid tutorial, but simplified.
+
+<div id="grid-container">
+  <div class="grid-item" v-for="n in 4" :id="'item'+n">Item {{n}}</div>
+</div>
+<style>
+#grid-container { position: relative; width: 400px; height: 400px; background: #f0f0f0; }
+.grid-item {
+  position: absolute;
+  width: 50px; height: 50px;
+  background: #b3d4fc;
+  touch-action: none; user-select: none;
+}
+</style>
+<script>
+interact('.grid-item').draggable({
+  modifiers: [
+    interact.modifiers.snap({
+      targets: [ interact.snappers.grid({ x: 50, y: 50 }) ],
+      range: Infinity, relativePoints: [{ x: 0, y: 0 }]
+    }),
+    interact.modifiers.restrict({ restriction: '#grid-container' })
+  ],
+  listeners: {
+    move(event) {
+      // dragging logic: update translate
+      const target = event.target;
+      // use data-x/y or fallback to 0
+      let x = (parseFloat(target.dataset.x) || 0) + event.dx;
+      let y = (parseFloat(target.dataset.y) || 0) + event.dy;
+      target.style.transform = `translate(${x}px, ${y}px)`;
+      target.dataset.x = x; target.dataset.y = y;
+    }
+  }
+});
+</script>
+
+Explanation: Four .grid-item divs inside a container. The script uses a class selector to make them draggable. We apply two modifiers: snap to a 50px grid (the size of items) and restrict movement within the container. As a result, you can drag items around, and they will latch to the 50px grid positions. The move listener is identical to earlier examples, tracking the position in data-x, data-y. This ensures smooth dragging and correct snapping.
+
+Example 2: Snapping and Restricting a Resizable Element
+
+Scenario: An element that can be resized, but it snaps its size to increments of 20px and cannot be made smaller than a minimum or moved outside the container.
+
+<div id="resize-container" style="position: relative; width:300px; height:300px; padding:10px; background:#eee;">
+  <div id="resize-box" style="
+       width: 80px; height: 80px; background:#8ce;
+       position: absolute; touch-action:none; user-select:none;">
+    Resize Me
+  </div>
+</div>
+<script>
+interact('#resize-box').resizable({
+  edges: { left:true, right:true, top:true, bottom:true },
+  modifiers: [
+    interact.modifiers.snap({
+      targets: [ interact.snappers.grid({ x:20, y:20 }) ],
+      range: Infinity, relativePoints: [ { x:0, y:0 } ]
+    }),
+    interact.modifiers.restrictSize({
+      min: { width: 40, height: 40 },
+      max: { width: 300, height: 300 }
+    }),
+    interact.modifiers.restrictEdges({
+      outer: '#resize-container', endOnly: true
+    })
+  ],
+  listeners: {
+    move(event) {
+      const target = event.target;
+      // get current pos from data or 0
+      let x = parseFloat(target.getAttribute('data-x')) || 0;
+      let y = parseFloat(target.getAttribute('data-y')) || 0;
+      // update size
+      target.style.width  = event.rect.width + 'px';
+      target.style.height = event.rect.height + 'px';
+      // translate if needed (top/left drag)
+      x += event.deltaRect.left;
+      y += event.deltaRect.top;
+      target.style.transform = `translate(${x}px, ${y}px)`;
+      target.setAttribute('data-x', x);
+      target.setAttribute('data-y', y);
+    }
+  }
+});
+</script>
+
+Explanation: We have a #resize-box inside #resize-container. We enable resizing on all edges. Modifiers used:
+ • Snap to a 20px grid (so width/height will jump in 20px increments).
+ • restrictSize to enforce min width/height of 40px and max up to container size ￼ ￼.
+ • restrictEdges to keep the box within the container’s bounds during resize (especially if dragging edges outward) ￼ ￼.
+The move listener updates the element’s style and position, storing data-x,y (similar to previous resizing examples). The result: when you drag the edges, the box resizes in steps of 20px and won’t shrink too small or go outside the gray container.
+
+Example 3: Collision Detection on Drag (Basic)
+
+Scenario: Two draggable boxes change color if they collide with each other while dragging.
+
+<div id="playground" style="position: relative; width:400px; height:200px; background:#f9f9f9;">
+  <div class="box" id="box1" style="position:absolute; width:50px; height:50px; background: #28e;"></div>
+  <div class="box" id="box2" style="position:absolute; width:50px; height:50px; background: #28e; left: 100px; top: 80px;"></div>
+</div>
+<script>
+function checkCollision(el1, el2) {
+  const r1 = el1.getBoundingClientRect();
+  const r2 = el2.getBoundingClientRect();
+  return !(r2.left > r1.right ||
+           r2.right < r1.left ||
+           r2.top > r1.bottom ||
+           r2.bottom < r1.top);
+}
+interact('.box').draggable({
+  listeners: {
+    move(event) {
+      const target = event.target;
+      // move element
+      target.style.left = (parseFloat(target.style.left)||0) + event.dx + 'px';
+      target.style.top  = (parseFloat(target.style.top)||0) + event.dy + 'px';
+      // collision check
+      const otherId = target.id === 'box1' ? 'box2' : 'box1';
+      const other = document.getElementById(otherId);
+      if (other && checkCollision(target, other)) {
+        target.style.background = 'red';
+        other.style.background = 'red';
+      } else {
+        target.style.background = '#28e';
+        if (other) other.style.background = '#28e';
+      }
+    }
+  }
+});
+</script>
+
+Explanation: We have two absolutely positioned .box elements in a container. We make them draggable (no special modifiers here). On each move, we manually set left and top styles (for a change, instead of transform). After moving, we call checkCollision to see if the dragged box overlaps the other box. If so, we change both boxes’ background to red; if not, we reset to blue (#28e). The collision check uses bounding boxes. This example shows a simple approach to collision detection: using geometry in the drag handler. For more complex scenarios or many elements, you’d optimize this (perhaps only checking nearby items, etc.).
+
+Example 4: Custom Dropzone (Drag to Trash)
+
+Scenario: Drag an item to a “trash bin” area to remove it.
+
+<div style="padding:20px;">
+  <div id="drag-item" style="display:inline-block; width:60px; height:60px; background:orange;">📝</div>
+  <div id="trash" style="display:inline-block; width:60px; height:60px; background:#ccc; margin-left:100px; text-align:center; line-height:60px;">
+    🗑️
+  </div>
+</div>
+<script>
+interact('#drag-item').draggable({
+  listeners: {
+    move(event) {
+      event.target.style.transform = `translate(${event.pageX}px, ${event.pageY}px)`;
+    },
+    end(event) {
+      // reset position if not dropped in trash
+      event.target.style.transform = '';
+    }
+  }
+});
+interact('#trash').dropzone({
+  accept: '#drag-item',
+  overlap: 0.75,
+  ondragenter(event) {
+    event.target.style.background = 'red';
+  },
+  ondragleave(event) {
+    event.target.style.background = '#ccc';
+  },
+  ondrop(event) {
+    event.target.style.background = '#ccc';
+    event.relatedTarget.style.display = 'none'; // "delete" the item
+    alert('Item deleted!');
+  }
+});
+</script>
+
+Explanation: A draggable item (an orange square with an emoji) and a trash can (gray square with bin emoji). The item is made draggable. On drag move, we position it at the pointer via transform (this is a crude positioning using event.pageX/Y, which could be refined to center the item under cursor, but it works simply). On drag end, we reset its position (so if dropped nowhere, it goes back to original spot). The #trash is a dropzone that accepts only the specific #drag-item. We require 75% overlap for it to count as a drop (overlap: 0.75 means the item must almost fully be on the trash). While dragging, if the item enters the trash area, we highlight it red; if it leaves, go back to gray. On drop, we “delete” the item by hiding it (setting display: none) and show an alert. This example demonstrates a delete use case and how to use overlap thresholds and visual feedback on drop targets.
+
+Example 5: Logging Events and Coordinates
+
+Scenario: A debug example that logs various Interact.js events on an element.
+
+<div id="debug-target" style="width:100px; height:100px; background:#67e; touch-action:none; user-select:none;">
+  Drag or Tap me
+</div>
+<script>
+interact('#debug-target')
+  .draggable({})    // enable dragging (no listeners here)
+  .gesturable({})   // enable gestures if you put 2 fingers
+  .on('dragstart dragmove dragend tap doubletap hold', function(event) {
+    console.log(event.type,
+                'pageX:', event.pageX, 'pageY:', event.pageY,
+                'dx:', event.dx, 'dy:', event.dy,
+                'speed:', event.speed);
+  });
+</script>
+
+Explanation: We have a #debug-target which is a simple colored box. We call .draggable({}) and .gesturable({}) just to enable those interactions (so that drag events fire; gesturable is enabled to allow hold and other pointer events to come through). Then we use the .on() method to attach a listener for multiple event types: drag events, plus tap, doubletap, and hold. In the listener, we log the event type and some properties to the console: coordinates and delta, etc. If you run this and interact:
+ • Clicking quickly will log a tap event.
+ • Clicking and holding ~0.6s will log a hold event.
+ • Double-clicking will log doubletap.
+ • Dragging will log a series of dragmove and then a dragend.
+This example is useful during development to understand what events are firing and the data they carry.
+
+Each of these examples can be adapted to a Vue component easily (wrapping the HTML and script in a component, and using Vue’s data if needed), but they are presented in a generic way for clarity. They demonstrate common scenarios: grid snapping, resizing with constraints, collision detection, dropzones, and debugging events.
