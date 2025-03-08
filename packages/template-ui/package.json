@@ -1,7 +1,7 @@
 {
-  "name": "interact-grid",
+  "name": "template-ui",
   "version": "1.0.0",
-  "description": "To showcase html/css grid in vue, with interact to handle resizing of grid items and sorting/dragging dropping and reordering too.",
+  "description": "",
   "type": "module",
   "scripts": {
     "dev": "vite",

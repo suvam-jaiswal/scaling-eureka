@@ -1,7 +1,7 @@
 {
-  "name": "interact-grid",
+  "name": "grid-vue-use",
   "version": "1.0.0",
-  "description": "To showcase html/css grid in vue 3, with interact to handle resizing of grid items and sorting/dragging dropping and reordering too.",
+  "description": "To showcase html/css grid in vue 3, with vueUse to handle resizing of grid items and sorting/dragging dropping and reordering too.",
   "type": "module",
   "scripts": {
     "dev": "vite",
