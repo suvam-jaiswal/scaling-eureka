@@ -2,6 +2,8 @@
   <div 
     class="p-grid"
     :class="{ 'p-grid--mobile': isMobile }"
+    role="grid"
+    aria-label="Interactive dashboard grid"
   >
     <slot></slot>
   </div>
@@ -42,6 +44,7 @@ onUnmounted(() => {
   margin-bottom: 1rem;
   background-color: rgba(0, 0, 0, 0.02);
   border-radius: var(--border-radius);
+  border: 1px solid var(--surface-border);
 }
 
 /* Responsive styles */

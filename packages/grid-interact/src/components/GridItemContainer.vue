@@ -2,6 +2,10 @@
   <div 
     class="p-card p-grid-item-container"
     :style="containerStyle"
+    role="gridcell"
+    :aria-colindex="colStart"
+    :aria-rowindex="rowStart"
+    tabindex="-1"
   >
     <slot></slot>
   </div>
@@ -59,5 +63,10 @@ const containerStyle = computed(() => {
 .p-grid-item-container:hover {
   box-shadow: var(--shadow-md);
   border-color: #b0c4de;
+}
+
+.p-grid-item-container:focus-within {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
 }
 </style>

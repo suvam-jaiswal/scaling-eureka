@@ -18,7 +18,7 @@ const defaultItems: GridItemData[] = [
     rowSpan: 1,
     colStart: 1,
     rowStart: 1,
-    content: 'Item 1'
+    content: 'Weather Widget'
   },
   {
     id: '2',
@@ -26,31 +26,103 @@ const defaultItems: GridItemData[] = [
     rowSpan: 1,
     colStart: 3,
     rowStart: 1,
-    content: 'Item 2'
+    content: 'Quick Tasks'
   },
   {
     id: '3',
+    colSpan: 1,
+    rowSpan: 1,
+    colStart: 4,
+    rowStart: 1,
+    content: 'Notifications'
+  },
+  {
+    id: '4',
     colSpan: 2,
     rowSpan: 2,
     colStart: 1,
     rowStart: 2,
-    content: 'Item 3'
-  },
-  {
-    id: '4',
-    colSpan: 1,
-    rowSpan: 1,
-    colStart: 3,
-    rowStart: 2,
-    content: 'Item 4'
+    content: 'Analytics Chart'
   },
   {
     id: '5',
+    colSpan: 2,
+    rowSpan: 1,
+    colStart: 3,
+    rowStart: 2,
+    content: 'Recent Activity'
+  },
+  {
+    id: '6',
+    colSpan: 1,
+    rowSpan: 1,
+    colStart: 3,
+    rowStart: 3,
+    content: 'Calendar'
+  },
+  {
+    id: '7',
+    colSpan: 1,
+    rowSpan: 1,
+    colStart: 4,
+    rowStart: 3,
+    content: 'Messages'
+  },
+  {
+    id: '8',
     colSpan: 4,
     rowSpan: 1,
     colStart: 1,
     rowStart: 4,
-    content: 'Item 5 (Full Width)'
+    content: 'System Status'
+  },
+  {
+    id: '9',
+    colSpan: 2,
+    rowSpan: 1,
+    colStart: 1,
+    rowStart: 5,
+    content: 'Recent Documents'
+  },
+  {
+    id: '10',
+    colSpan: 2,
+    rowSpan: 1,
+    colStart: 3,
+    rowStart: 5,
+    content: 'Resources'
+  },
+  {
+    id: '11',
+    colSpan: 1,
+    rowSpan: 2,
+    colStart: 1,
+    rowStart: 6,
+    content: 'Team Members'
+  },
+  {
+    id: '12',
+    colSpan: 3,
+    rowSpan: 1,
+    colStart: 2,
+    rowStart: 6,
+    content: 'Project Timeline'
+  },
+  {
+    id: '13',
+    colSpan: 1,
+    rowSpan: 1,
+    colStart: 2,
+    rowStart: 7,
+    content: 'Notes'
+  },
+  {
+    id: '14',
+    colSpan: 2,
+    rowSpan: 1,
+    colStart: 3,
+    rowStart: 7,
+    content: 'Performance Metrics'
   }
 ];
 
