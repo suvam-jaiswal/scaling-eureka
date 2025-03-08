@@ -1,11 +1,16 @@
 <template>
   <div class="home">
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a
+      href="#main-content"
+      class="skip-link"
+    >Skip to main content</a>
     
     <header class="home-header">
       <div class="container-full">
         <div class="flex justify-content-between align-items-center">
-          <div class="font-bold text-xl">Interactive Grid Dashboard</div>
+          <div class="font-bold text-xl">
+            Interactive Grid Dashboard
+          </div>
           <button 
             class="p-button p-button-secondary p-button-sm"
             @click="resetDashboard"
@@ -17,30 +22,42 @@
       </div>
     </header>
     
-    <main id="main-content" class="home-content">
+    <main
+      id="main-content"
+      class="home-content"
+    >
       <div class="container-full">
         <div class="dashboard">
           <Grid>
             <GridItemContainer 
               v-for="item in gridItems"
               :key="item.id"
-              :colSpan="item.colSpan"
-              :rowSpan="item.rowSpan"
-              :colStart="item.colStart"
-              :rowStart="item.rowStart"
+              :col-span="item.colSpan"
+              :row-span="item.rowSpan"
+              :col-start="item.colStart"
+              :row-start="item.rowStart"
             >
               <GridItem
                 :position="{ row: item.rowStart, col: item.colStart }"
                 :size="{ cols: item.colSpan, rows: item.rowSpan }"
               >
-                <template #header>{{ item.content }}</template>
+                <template #header>
+                  {{ item.content }}
+                </template>
                 <div class="item-content">
                   <template v-if="item.content === 'Weather Widget'">
                     <div class="weather-widget">
-                      <i class="pi pi-cloud text-primary" style="font-size: 2rem;"></i>
+                      <i
+                        class="pi pi-cloud text-primary"
+                        style="font-size: 2rem;"
+                      ></i>
                       <div class="weather-info">
-                        <div class="temperature">72°F</div>
-                        <div class="location">San Francisco, CA</div>
+                        <div class="temperature">
+                          72°F
+                        </div>
+                        <div class="location">
+                          San Francisco, CA
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -55,7 +72,9 @@
                   
                   <template v-else>
                     <div class="widget-content">
-                      <div class="mb-2">{{ item.content }} Content</div>
+                      <div class="mb-2">
+                        {{ item.content }} Content
+                      </div>
                       <div class="text-sm text-color-secondary">
                         {{ item.colSpan }}x{{ item.rowSpan }} grid units
                       </div>

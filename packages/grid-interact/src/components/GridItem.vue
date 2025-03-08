@@ -1,14 +1,14 @@
 <template>
   <div 
+    ref="itemRef"
     class="p-grid-item"
     :class="{ 'p-grid-item--dragging': isDragging }"
-    ref="itemRef"
     tabindex="-1"
   >
     <div class="p-grid-item__header">
       <button 
-        class="p-grid-item__drag-handle" 
-        ref="dragHandleRef"
+        ref="dragHandleRef" 
+        class="p-grid-item__drag-handle"
         tabindex="0"
         aria-label="Drag to move widget"
         title="Drag to move widget"
@@ -18,7 +18,9 @@
         <i class="pi pi-arrows-alt"></i>
       </button>
       <div class="p-grid-item__title">
-        <slot name="header">Widget</slot>
+        <slot name="header">
+          Widget
+        </slot>
       </div>
       <div class="p-grid-item__actions">
         <button 
@@ -32,17 +34,23 @@
       </div>
     </div>
     <hr class="p-divider m-0" />
-    <div class="p-grid-item__content" tabindex="-1">
+    <div
+      class="p-grid-item__content"
+      tabindex="-1"
+    >
       <slot>
         <div class="p-grid-item__placeholder">
-          <i class="pi pi-box mb-2" style="font-size: 1.5rem"></i>
+          <i
+            class="pi pi-box mb-2"
+            style="font-size: 1.5rem"
+          ></i>
           <span>Widget Content</span>
         </div>
       </slot>
     </div>
     <button 
-      class="p-grid-item__resize-handle" 
-      ref="resizeHandleRef"
+      ref="resizeHandleRef" 
+      class="p-grid-item__resize-handle"
       tabindex="0"
       aria-label="Resize widget"
       title="Resize widget"
@@ -58,7 +66,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import interact from 'interactjs';
+
+// Enable debug mode for interact
+interact.debug(true);
 
 // Component state
 const itemRef = ref<HTMLElement | null>(null);
@@ -91,14 +103,93 @@ const getItemSize = computed(() => {
   return '';
 });
 
+// Initialize interact drag on the drag handle
+onMounted(() => {
+  if (dragHandleRef.value && itemRef.value) {
+    interact(dragHandleRef.value)
+      .draggable({
+        inertia: false,
+        modifiers: [],
+        autoScroll: true,
+        listeners: {
+          start: (event) => {
+            console.log('Drag started', {
+              target: event.target,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+            isDragging.value = true;
+          },
+          move: (event) => {
+            console.log('Drag move', {
+              dx: event.dx,
+              dy: event.dy,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+          },
+          end: (event) => {
+            console.log('Drag ended', {
+              target: event.target,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+            isDragging.value = false;
+          }
+        }
+      });
+  }
+
+  if (resizeHandleRef.value && itemRef.value) {
+    interact(resizeHandleRef.value)
+      .draggable({
+        inertia: false,
+        modifiers: [],
+        autoScroll: true,
+        listeners: {
+          start: (event) => {
+            console.log('Resize started', {
+              target: event.target,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+          },
+          move: (event) => {
+            console.log('Resize move', {
+              dx: event.dx,
+              dy: event.dy,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+          },
+          end: (event) => {
+            console.log('Resize ended', {
+              target: event.target,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+          }
+        }
+      });
+  }
+});
+
+// Clean up interact instances
+onUnmounted(() => {
+  if (dragHandleRef.value) {
+    interact(dragHandleRef.value).unset();
+  }
+  if (resizeHandleRef.value) {
+    interact(resizeHandleRef.value).unset();
+  }
+});
+
 // Keyboard handlers
 const handleDragKeyDown = (event: KeyboardEvent) => {
-  // This is a placeholder for when we add interactjs
   console.log('Drag handle key down:', event.key);
 };
 
 const handleResizeKeyDown = (event: KeyboardEvent) => {
-  // This is a placeholder for when we add interactjs
   console.log('Resize handle key down:', event.key);
 };
 
