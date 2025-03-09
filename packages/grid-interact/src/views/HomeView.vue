@@ -1,3 +1,33 @@
+<script setup lang="ts">
+import { useGridStore } from '../stores/grid';
+import Grid from '../components/Grid.vue';
+import GridItemContainer from '../components/GridItemContainer.vue';
+import GridItem from '../components/GridItem.vue';
+import { storeToRefs } from 'pinia';
+
+// Initialize grid store
+const gridStore = useGridStore();
+const { items: gridItems } = storeToRefs(gridStore);
+
+// Reset dashboard to default layout
+const resetDashboard = () => {
+  gridStore.resetLayout();
+  console.log('Dashboard layout has been reset to default');
+};
+
+// Handle grid item movement
+const handleGridItemMove = (id: string, position: { row: number, col: number }) => {
+  console.log(`Moving item ${id} to row: ${position.row}, col: ${position.col}`);
+  gridStore.moveItem(id, position.col, position.row);
+};
+
+// Handle grid item resize
+const handleGridItemResize = (id: string, size: { cols: number, rows: number }) => {
+  console.log(`Resizing item ${id} to cols: ${size.cols}, rows: ${size.rows}`);
+  gridStore.resizeItem(id, size.cols, size.rows);
+};
+</script>
+
 <template>
   <div class="home">
     <a
@@ -38,8 +68,11 @@
               :row-start="item.rowStart"
             >
               <GridItem
+                :id="item.id"
                 :position="{ row: item.rowStart, col: item.colStart }"
                 :size="{ cols: item.colSpan, rows: item.rowSpan }"
+                @move="handleGridItemMove"
+                @resize="handleGridItemResize"
               >
                 <template #header>
                   {{ item.content }}
@@ -92,24 +125,6 @@
     </main>
   </div>
 </template>
-
-<script setup lang="ts">
-import { useGridStore } from '../stores/grid';
-import Grid from '../components/Grid.vue';
-import GridItemContainer from '../components/GridItemContainer.vue';
-import GridItem from '../components/GridItem.vue';
-import { storeToRefs } from 'pinia';
-
-// Initialize grid store
-const gridStore = useGridStore();
-const { items: gridItems } = storeToRefs(gridStore);
-
-// Reset dashboard to default layout
-const resetDashboard = () => {
-  gridStore.resetLayout();
-  console.log('Dashboard layout has been reset to default');
-};
-</script>
 
 <style>
 .home {
