@@ -95,7 +95,7 @@ const handleResizeEnd = () => {
 // Force grid cells to update
 const updateGridCells = () => {
   // Force reactivity refresh for gridCells computed property
-  gridRows.value = [...gridRows.value];
+  gridRows.value = gridRows.value + 0; // Trigger reactivity without changing the value
 };
 
 // Method to calculate which cells intersect with a dragged element
