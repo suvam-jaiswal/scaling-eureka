@@ -1,24 +1,24 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import router from './router'
-import App from './App.vue'
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import router from './router';
+import App from './App.vue';
 
 // Import PrimeVue
-import PrimeVue from 'primevue/config'
+import PrimeVue from 'primevue/config';
 // For PrimeVue 4, themes structure has changed
 // We'll skip the theme import for now
-import ToastService from 'primevue/toastservice'
-import 'primeicons/primeicons.css' // Icons
+import ToastService from 'primevue/toastservice';
+import 'primeicons/primeicons.css'; // Icons
 
-import './assets/main.css'
+import './assets/main.css';
 
-const app = createApp(App)
+const app = createApp(App);
 
-app.use(createPinia())
-app.use(router)
+app.use(createPinia());
+app.use(router);
 app.use(PrimeVue, {
   ripple: true
-})
-app.use(ToastService)
+});
+app.use(ToastService);
 
-app.mount('#app')
+app.mount('#app');
