@@ -1,15 +1,14 @@
-// Import components
-// import GridLayout from './components/GridLayout.vue';
-// import GridItem from './components/GridItem.vue';
+import { createApp } from 'vue';
 
-// Export components
-// export { GridLayout, GridItem };
+import App from './App.vue';
+// --- Library Exports (Keep these for build process) ---
+// These won't be used when running `npm run dev` but are needed for `npm run build`
+import Board from './components/Board.vue';
+// Import base styles if needed globally for the example app
+// import './styles/variables.css';
+// import './styles/board.css';
 
-// Export types if needed
-// export * from './types';
+createApp(App).mount('#app');
 
-// Export composables if needed
-// export * from './composables';
-
-// Placeholder export until components are created
-export default {};
+export { Board };
+export * from './types';
