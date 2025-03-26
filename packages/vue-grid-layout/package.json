@@ -1,0 +1,62 @@
+{
+  "name": "vue-grid-layout",
+  "private": false,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A draggable and resizable grid layout for Vue.js, inspired by react-grid-layout.",
+  "keywords": [
+    "vue",
+    "grid",
+    "layout",
+    "draggable",
+    "resizable",
+    "vue-grid-layout"
+  ],
+  "license": "MIT",
+  "author": "Your Name <your.email@example.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/vue-grid-layout.git"
+  },
+  "main": "./dist/vue-grid-layout.umd.js",
+  "module": "./dist/vue-grid-layout.es.js",
+  "types": "./dist/main.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/vue-grid-layout.es.js",
+      "require": "./dist/vue-grid-layout.umd.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --declaration --emitDeclarationOnly && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "vue": "^3.2.0"
+  },
+  "devDependencies": {
+    "@rushstack/eslint-patch": "^1.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.1",
+    "@typescript-eslint/parser": "^7.16.1",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/eslint-config-prettier": "^8.0.0",
+    "@vue/eslint-config-typescript": "^12.0.0",
+    "@vue/tsconfig": "^0.7.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-vue": "^9.27.0",
+    "prettier": "^3.3.3",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0",
+    "vue-tsc": "^2.2.4"
+  }
+}

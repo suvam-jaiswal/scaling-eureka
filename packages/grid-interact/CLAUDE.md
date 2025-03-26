@@ -1,8 +1,17 @@
 # Common Commands for interact-grid
 
+## ESLint
+
+This project now uses the ESLint flat config format (eslint.config.js).
+
+```bash
+npm run lint    # Lint code
+npm run format  # Format code using ESLint rules
+```
+
 ## Development
 
-Start the development server:
+Start the development server: (message to claude - dont run this as this is most certainly running in a separate terminal while you refactor code)
 
 ```bash
 npm run dev

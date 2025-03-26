@@ -1,0 +1,116 @@
+/* src/styles/board.css */
+/* Core styles for Board and BoardItem components */
+/* Uses variables defined in variables.css */
+
+.vue-board {
+  position: relative;
+  /* Ensure container establishes a positioning context */
+  /* Add padding based on gap variable? */
+  padding: var(--vue-board-gap, 10px);
+  /* Min height or other container styles as needed */
+  min-height: 100px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-gap: 10px;
+}
+
+.vue-board__item {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid var(--vue-board-item-border-color, #e0e0e0);
+  background-color: var(--vue-board-item-bg, #ffffff);
+  border-radius: var(--vue-board-item-border-radius, 4px);
+  transition: var(--vue-board-item-transition);
+  overflow: hidden; /* Or visible, depending on content needs */
+  /* Add focus-within styles? */
+}
+
+.vue-board__item--dragging {
+  z-index: 1000;
+  opacity: 0.9;
+  /* Add box-shadow for lifted effect? */
+  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */
+}
+
+.vue-board__item--resizing {
+  z-index: 999; /* Slightly lower than dragging */
+  /* Add any specific resizing styles if needed */
+}
+
+.vue-board__drag-handle {
+  /* Styles for the drag handle element */
+  touch-action: none; /* Prevent scrolling on touch devices */
+  cursor: grab;
+  padding: 4px; /* Example */
+  display: inline-block; /* Or block */
+  /* Add icon styles or background */
+  color: var(--vue-board-handle-color, #545b64);
+}
+
+.vue-board__drag-handle:hover {
+  background-color: var(--vue-board-handle-hover-bg, #e0e0e0);
+}
+
+.vue-board__drag-handle:focus-visible {
+  outline: var(--vue-board-focus-outline, 2px solid #0073bb);
+  outline-offset: 2px;
+}
+
+/* Add styles for resize handles (e.g., .vue-board__resize-handle--se) */
+.vue-board__resize-handle {
+  position: absolute;
+  width: 10px; /* Example size */
+  height: 10px; /* Example size */
+  background-color: var(--vue-board-handle-color, #545b64); /* Or use an icon */
+  opacity: 0; /* Hidden by default, show on hover/focus */
+  transition: opacity 0.2s;
+}
+
+.vue-board__item:hover .vue-board__resize-handle,
+.vue-board__item:focus-within .vue-board__resize-handle {
+  opacity: 1;
+}
+
+.vue-board__resize-handle--se {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+/* Add other handle positions (sw, ne, nw, etc.) as needed */
+
+/* Styles for ARIA live region and hidden descriptions */
+.vue-board__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Styles for grid cell highlighting (if implemented) */
+.vue-board__grid-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1; /* Behind items */
+  /* Use CSS Grid or other methods to draw cells */
+}
+
+.vue-board__grid-cell {
+  /* Base cell style */
+  transition: background-color 0.1s;
+}
+
+.vue-board__grid-cell--highlight-target {
+  background-color: var(--vue-board-highlight-target-bg);
+}
+
+.vue-board__grid-cell--highlight-other {
+  background-color: var(--vue-board-highlight-other-bg);
+}

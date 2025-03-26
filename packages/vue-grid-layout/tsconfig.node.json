@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json", // Extend the main config for base options
+  "compilerOptions": {
+    // Settings specific to Node environment
+    "composite": true, // Required for project references
+    "module": "NodeNext", // Use Node's module system
+    "moduleResolution": "NodeNext", // Use Node's module resolution
+    "types": ["node"] // Include Node types explicitly
+    // "noEmit": true // Cannot use noEmit with composite projects
+  },
+  "include": [
+    // List Node-specific configuration files here
+    "vite.config.ts",
+    ".eslintrc.cjs" // Include ESLint config as it's a .cjs file
+  ]
+}

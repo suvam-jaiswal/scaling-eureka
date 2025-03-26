@@ -1,13 +1,566 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import interact from 'interactjs';
+
+// Enable debug mode for interact
+interact.debug(true);
+
+// Component state
+const itemRef = ref<HTMLElement | null>(null);
+const dragHandleRef = ref<HTMLElement | null>(null);
+const resizeHandleRef = ref<HTMLElement | null>(null);
+const isDragging = ref(false);
+const dragOffset = ref({ x: 0, y: 0 });
+const dragPosition = ref({ x: 0, y: 0 });
+
+// Props for widget content
+interface Props {
+  id: string;
+  position?: { row: number; col: number };
+  size?: { cols: number; rows: number };
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  id: '',
+  position: undefined,
+  size: undefined
+});
+
+// Define emits for movement and resize events
+const emit = defineEmits<{
+  (e: 'move', id: string, position: { row: number, col: number }): void;
+  (e: 'resize', id: string, size: { cols: number, rows: number }): void;
+}>();
+
+// Computed props
+const getItemSize = computed(() => {
+  if (props.size && props.position) {
+    return `${props.size.cols}x${props.size.rows}`;
+  }
+  return '';
+});
+
+// Helper function to dispatch grid events
+const dispatchGridEvent = (eventName: string, detail?: any) => {
+  document.dispatchEvent(new CustomEvent(eventName, { detail }));
+};
+
+// Calculate cell position from screen coordinates
+const calculateGridPosition = (x: number, y: number) => {
+  if (!itemRef.value) return { col: 1, row: 1 };
+
+  // Get the grid container
+  const gridElement = itemRef.value.closest('.p-grid');
+  if (!gridElement) return { col: 1, row: 1 };
+
+  const gridRect = gridElement.getBoundingClientRect();
+
+  // Get grid gap and padding
+  const gridStyle = window.getComputedStyle(gridElement);
+  const gridGap = parseFloat(gridStyle.gap) || 20; // Default 20px if not set
+  const paddingLeft = parseFloat(gridStyle.paddingLeft) || 0;
+  const paddingTop = parseFloat(gridStyle.paddingTop) || 0;
+
+  // Determine number of columns based on grid width
+  let numColumns = 4; // Default
+  if (gridRect.width < 768) {
+    numColumns = 1; // Mobile
+  } else if (gridRect.width >= 1600) {
+    numColumns = 6; // Large screens
+  }
+
+  // Calculate usable grid width (excluding padding)
+  const usableWidth = gridRect.width - (paddingLeft * 2);
+  const cellWidth = (usableWidth - (gridGap * (numColumns - 1))) / numColumns;
+
+  // For row height, we'll use the average height of existing grid items as a guide
+  const gridItems = gridElement.querySelectorAll('.p-grid-item-container');
+  let avgRowHeight = 100; // Fallback
+
+  if (gridItems.length > 0) {
+    let totalHeight = 0;
+    gridItems.forEach(item => {
+      totalHeight += item.getBoundingClientRect().height;
+    });
+    avgRowHeight = totalHeight / gridItems.length;
+  }
+
+  // Adjust x and y to account for padding
+  const adjustedX = x - gridRect.left - paddingLeft;
+  const adjustedY = y - gridRect.top - paddingTop;
+
+  // Calculate column - account for gaps
+  let col = 1;
+  let accumulatedWidth = 0;
+
+  for (let i = 0; i < numColumns; i++) {
+    const nextCellWidth = cellWidth + (i < numColumns - 1 ? gridGap : 0);
+    if (adjustedX <= accumulatedWidth + nextCellWidth) {
+      col = i + 1;
+      break;
+    }
+    accumulatedWidth += nextCellWidth;
+  }
+
+  // Calculate row - using average height and gaps
+  const rowHeight = avgRowHeight + gridGap;
+  const row = Math.max(1, Math.floor(adjustedY / rowHeight) + 1);
+
+  return { col, row };
+};
+
+// Animation state
+const isAnimating = ref(false);
+const animationTransform = ref('');
+const previousBounds = ref({ x: 0, y: 0, width: 0, height: 0 });
+
+// Grid cell dimensions
+const gridCellSize = ref({ width: 0, height: 0 });
+const gridGap = ref(0);
+
+// Function to calculate grid cell dimensions - this is side-effect free
+const calculateGridDimensions = () => {
+  if (!itemRef.value) return;
+
+  const gridElement = itemRef.value.closest('.dashboard-grid') || itemRef.value.closest('.p-grid');
+  if (!gridElement) return;
+
+  const gridStyle = window.getComputedStyle(gridElement);
+  const gap = parseFloat(gridStyle.gap) || 20;
+
+  // Get all grid items to measure average cell size
+  const gridItems = gridElement.querySelectorAll('.p-grid-item-container');
+
+  if (gridItems.length === 0) return;
+
+  // Calculate average dimensions
+  let totalWidth = 0;
+  let totalHeight = 0;
+
+  gridItems.forEach(item => {
+    const rect = item.getBoundingClientRect();
+    totalWidth += rect.width;
+    totalHeight += rect.height;
+  });
+
+  const avgWidth = totalWidth / gridItems.length;
+  const avgHeight = totalHeight / gridItems.length;
+
+  // Account for current grid template columns
+  const gridTemplateColumns = gridStyle.gridTemplateColumns;
+  const columns = gridTemplateColumns.split(' ').length || 4;
+
+  gridCellSize.value = {
+    width: avgWidth,
+    height: avgHeight
+  };
+  gridGap.value = gap;
+};
+
+// Calculate current element bounds - side-effect free
+const calculateElementBounds = () => {
+  if (!itemRef.value) return null;
+  const rect = itemRef.value.getBoundingClientRect();
+  return {
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height
+  };
+};
+
+// Calculate target position based on grid coordinates - side-effect free
+const calculateTargetPosition = (position: { row: number, col: number }) => {
+  // Calculate target position using grid cell size
+  return {
+    x: (position.col - 1) * (gridCellSize.value.width + gridGap.value),
+    y: (position.row - 1) * (gridCellSize.value.height + gridGap.value)
+  };
+};
+
+// Animate movement function
+const animateToNewPosition = async (newPosition: { row: number, col: number }) => {
+  if (!itemRef.value) return;
+
+  // Ensure we have grid dimensions
+  calculateGridDimensions();
+
+  // Store current position
+  const currentBounds = calculateElementBounds();
+  if (!currentBounds) return;
+  previousBounds.value = currentBounds;
+
+  // Calculate target position
+  const targetPos = calculateTargetPosition(newPosition);
+
+  // Calculate the difference for animation
+  const dx = targetPos.x - currentBounds.x;
+  const dy = targetPos.y - currentBounds.y;
+
+  if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return; // Skip small movements
+
+  // Start animation
+  isAnimating.value = true;
+  const parent = itemRef.value.parentElement;
+  if (!parent) return;
+
+  // Set initial position using transform
+  parent.style.transition = 'transform 0.3s ease-in-out';
+  parent.style.transform = `translate3d(${-dx}px, ${-dy}px, 0)`;
+
+  // Force reflow to ensure the initial transform is applied
+  void parent.offsetHeight;
+
+  // Animate to final position (zero transform)
+  requestAnimationFrame(() => {
+    parent.style.transform = 'translate3d(0, 0, 0)';
+  });
+
+  // Wait for animation to complete before cleaning up
+  return new Promise<void>(resolve => {
+    const onTransitionEnd = () => {
+      // Clean up
+      parent.style.transition = '';
+      parent.style.transform = '';
+      isAnimating.value = false;
+      parent.removeEventListener('transitionend', onTransitionEnd);
+      resolve();
+    };
+
+    parent.addEventListener('transitionend', onTransitionEnd, { once: true });
+
+    // Failsafe: ensure cleanup happens even if transition event doesn't fire
+    setTimeout(() => {
+      if (isAnimating.value) onTransitionEnd();
+    }, 350);
+  });
+};
+
+// Watch for position changes
+watch(
+  () => props.position,
+  (newPos, oldPos) => {
+    if (!newPos || !oldPos) return;
+
+    // Only animate if the position actually changed
+    if (newPos.row === oldPos.row && newPos.col === oldPos.col) return;
+
+    // Animate to new position
+    nextTick(() => animateToNewPosition(newPos));
+  },
+  { deep: true }
+);
+
+// Initialize interact drag on the drag handle
+onMounted(() => {
+  if (dragHandleRef.value && itemRef.value) {
+    interact(dragHandleRef.value)
+      .draggable({
+        inertia: false,
+        modifiers: [
+          // Restrict movement to stay within the grid bounds
+          interact.modifiers.restrict({
+            restriction: '.p-grid',
+            elementRect: { left: 0, right: 1, top: 0, bottom: 1 },
+            endOnly: true
+          })
+        ],
+        autoScroll: true,
+        cursorChecker: () => 'grabbing', // Force grabbing cursor during drag
+        listeners: {
+          start: event => {
+            console.log('Drag started', {
+              target: event.target,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+
+            // Get container element
+            const container = itemRef.value?.closest('.p-grid-item-container');
+
+            // Reset drag offset
+            dragOffset.value = { x: 0, y: 0 };
+
+            // Mark as dragging
+            isDragging.value = true;
+
+            // Instead of absolute positioning, we'll use transform which is more reliable
+            if (container) {
+              // Just apply styles for dragging but leave positioning alone
+              container.style.zIndex = '100';
+              container.style.willChange = 'transform';
+
+              // Reset drag offset - we'll use it for transform
+              dragOffset.value = { x: 0, y: 0 };
+
+              // Add dragging class for styling
+              container.classList.add('grid-item-dragging');
+            }
+
+            // We'll calculate initial position dynamically based on current position
+            const rect = itemRef.value?.getBoundingClientRect();
+            if (rect) {
+              const centerX = rect.left + rect.width / 2;
+              const centerY = rect.top + rect.height / 2;
+
+              // Get initial grid position
+              const initialGridPos = calculateGridPosition(centerX, centerY);
+              dragPosition.value = initialGridPos;
+
+              // Get item size
+              const itemSize = {
+                cols: props.size?.cols || 1,
+                rows: props.size?.rows || 1
+              };
+
+              // Set up initial intersection with grid cells
+              dispatchGridEvent('grid:intersection', {
+                bounds: {
+                  colStart: initialGridPos.col,
+                  rowStart: initialGridPos.row,
+                  colSpan: itemSize.cols,
+                  rowSpan: itemSize.rows
+                }
+              });
+            }
+
+            // Dispatch custom event to show grid cells
+            dispatchGridEvent('grid:dragstart');
+          },
+          move: event => {
+            // Track total movement - using dx/dy offsets for precise movement with the mouse
+            dragOffset.value.x += event.dx;
+            dragOffset.value.y += event.dy;
+
+            // Get the grid item parent for drag updates
+            if (itemRef.value) {
+              const parent = itemRef.value.parentElement;
+
+              if (parent) {
+                // Always use transform for performance
+                parent.style.transform = `translate3d(${dragOffset.value.x}px, ${dragOffset.value.y}px, 0)`;
+
+                // Ensure dragging styles are consistently applied
+                parent.style.zIndex = '100';
+                parent.style.pointerEvents = 'none';
+                parent.style.boxShadow = 'var(--shadow-lg)';
+                parent.style.transition = 'none';
+
+                // Keep dragging class throughout movement
+                if (!parent.classList.contains('grid-item-dragging')) {
+                  parent.classList.add('grid-item-dragging');
+                }
+
+                // Force browser reflow/repaint for immediate visual update
+                // This can help ensure the element "sticks" to the cursor with no lag
+                void parent.offsetHeight;
+              }
+            }
+
+            // Use element center point to determine grid position
+            const rect = event.rect || itemRef.value?.getBoundingClientRect();
+            if (!rect) return;
+
+            // Calculate center point of the dragged element
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Calculate grid position based on center point
+            const gridPos = calculateGridPosition(centerX, centerY);
+
+            // Always update the position - this improves responsiveness and fixes cases
+            // where the grid might not properly update at the start of drag
+            {
+
+              // Update position
+              dragPosition.value = gridPos;
+
+              // Get item size
+              const itemSize = {
+                cols: props.size?.cols || 1,
+                rows: props.size?.rows || 1
+              };
+
+              // Use requestAnimationFrame for smoother cell highlights
+              // This syncs with the browser's paint cycle
+              requestAnimationFrame(() => {
+                // Clear previous intersection
+                dispatchGridEvent('grid:intersection', { bounds: null });
+
+                // Dispatch new intersection event to highlight cells
+                dispatchGridEvent('grid:intersection', {
+                  bounds: {
+                    colStart: gridPos.col,
+                    rowStart: gridPos.row,
+                    colSpan: itemSize.cols,
+                    rowSpan: itemSize.rows
+                  }
+                });
+              });
+
+              // Dispatch event for grid updates
+              dispatchGridEvent('grid:dragmove');
+            }
+          },
+          end: event => {
+            console.log('Drag ended', {
+              target: event.target,
+              clientX: event.client.x,
+              clientY: event.client.y
+            });
+
+            isDragging.value = false;
+
+            // Reset positioning and styles on parent
+            if (itemRef.value) {
+              const parent = itemRef.value.parentElement;
+              if (parent) {
+                // Use transition for smooth repositioning
+                parent.style.transition = 'all 0.2s ease-out';
+
+                // Reset transform and other styles
+                parent.style.transform = '';
+                parent.style.zIndex = '';
+                parent.style.pointerEvents = '';
+                parent.style.boxShadow = '';
+                parent.style.willChange = '';
+
+                // Remove dragging class
+                parent.classList.remove('grid-item-dragging');
+
+                // Remove transition after it completes
+                setTimeout(() => {
+                  if (parent) parent.style.transition = '';
+                }, 250);
+              }
+            }
+
+            // Clear intersection highlights
+            dispatchGridEvent('grid:intersection', { bounds: null });
+
+            // Emit final position for the grid to update if we have valid coordinates
+            if (dragPosition.value.col > 0 && dragPosition.value.row > 0) {
+              emit('move', props.id, dragPosition.value);
+            }
+
+            // Reset drag data
+            dragOffset.value = { x: 0, y: 0 };
+
+            // Dispatch custom event to hide grid cells
+            dispatchGridEvent('grid:dragend');
+          }
+        }
+      });
+  }
+
+  if (resizeHandleRef.value && itemRef.value) {
+    // Make the item resizable, but restrict to only using the handle
+    interact(itemRef.value)
+      .resizable({
+        // Enable resizing on bottom right corner
+        edges: { bottom: true, right: true },
+
+        // VERY IMPORTANT: Only allow resizing when starting from the handle
+        allowFrom: '.p-grid-item__resize-handle',
+
+        inertia: false,
+        modifiers: [],
+        listeners: {
+          start: event => {
+            console.log('Resize started', {
+              target: event.target,
+              rect: event.rect
+            });
+            // Dispatch custom event to show grid cells
+            dispatchGridEvent('grid:resizestart');
+          },
+          move: event => {
+            console.log('Resize move', {
+              rect: event.rect,
+              deltaRect: event.deltaRect
+            });
+
+            // Dispatch additional event for grid cell updates during resize
+            dispatchGridEvent('grid:resizemove');
+          },
+          end: event => {
+            console.log('Resize ended', {
+              target: event.target,
+              rect: event.rect
+            });
+            // Dispatch custom event to hide grid cells
+            dispatchGridEvent('grid:resizeend');
+          }
+        }
+      });
+  }
+
+  // Set up initial grid dimensions
+  nextTick(() => calculateGridDimensions());
+
+  // Add resize observer to recalculate grid dimensions when the window changes
+  const resizeObserver = new ResizeObserver(() => {
+    calculateGridDimensions();
+  });
+
+  const gridElement = itemRef.value?.closest('.dashboard-grid') || itemRef.value?.closest('.p-grid');
+  if (gridElement) {
+    resizeObserver.observe(gridElement);
+  }
+
+  onUnmounted(() => {
+    resizeObserver.disconnect();
+  });
+});
+
+// Clean up interact instances
+onUnmounted(() => {
+  if (dragHandleRef.value) {
+    interact(dragHandleRef.value).unset();
+  }
+  if (itemRef.value) {
+    interact(itemRef.value).unset();
+  }
+});
+
+// Keyboard handlers
+const handleDragKeyDown = (event: KeyboardEvent) => {
+  console.log('Drag handle key down:', event.key);
+};
+
+const handleResizeKeyDown = (event: KeyboardEvent) => {
+  console.log('Resize handle key down:', event.key);
+};
+
+// Watch for position changes
+watch(
+  () => props.position,
+  (newPos, oldPos) => {
+    if (!newPos || !oldPos) return;
+
+    // Only animate if the position actually changed
+    if (newPos.row === oldPos.row && newPos.col === oldPos.col) return;
+
+    // Animate to new position
+    nextTick(() => animateToNewPosition(newPos));
+  },
+  { deep: true }
+);
+</script>
+
 <template>
-  <div 
+  <div
     ref="itemRef"
     class="p-grid-item"
-    :class="{ 'p-grid-item--dragging': isDragging }"
+    :class="{
+      'p-grid-item--dragging': isDragging,
+      'p-grid-item--animating': isAnimating
+    }"
     tabindex="-1"
   >
     <div class="p-grid-item__header">
-      <button 
-        ref="dragHandleRef" 
+      <button
+        ref="dragHandleRef"
         class="p-grid-item__drag-handle"
         tabindex="0"
         aria-label="Drag to move widget"
@@ -23,7 +576,7 @@
         </slot>
       </div>
       <div class="p-grid-item__actions">
-        <button 
+        <button
           class="p-button p-button-text p-button-rounded p-button-sm"
           aria-label="Widget settings"
           title="Widget settings"
@@ -48,8 +601,8 @@
         </div>
       </slot>
     </div>
-    <button 
-      ref="resizeHandleRef" 
+    <button
+      ref="resizeHandleRef"
       class="p-grid-item__resize-handle"
       tabindex="0"
       aria-label="Resize widget"
@@ -57,146 +610,16 @@
       @keydown.space.prevent="handleResizeKeyDown"
       @keydown.enter.prevent="handleResizeKeyDown"
     ></button>
-    
+
     <!-- Badge to show position and size -->
     <div class="p-grid-item__badge">
       {{ getItemSize }}
     </div>
+
+    <!-- Invisible overlay for drag handle to make it easier to grab -->
+    <div class="p-grid-item__drag-area"></div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import interact from 'interactjs';
-
-// Enable debug mode for interact
-interact.debug(true);
-
-// Component state
-const itemRef = ref<HTMLElement | null>(null);
-const dragHandleRef = ref<HTMLElement | null>(null);
-const resizeHandleRef = ref<HTMLElement | null>(null);
-const isDragging = ref(false);
-
-// Props for widget content
-interface Props {
-  position?: { row: number; col: number };
-  size?: { cols: number; rows: number };
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  position: undefined,
-  size: undefined
-});
-
-// Define emits - will be used when we implement actual movement
-defineEmits<{
-  (e: 'move', position: { x: number, y: number }): void;
-  (e: 'resize', size: { width: number, height: number }): void;
-}>();
-
-// Computed props
-const getItemSize = computed(() => {
-  if (props.size && props.position) {
-    return `${props.size.cols}x${props.size.rows}`;
-  }
-  return '';
-});
-
-// Initialize interact drag on the drag handle
-onMounted(() => {
-  if (dragHandleRef.value && itemRef.value) {
-    interact(dragHandleRef.value)
-      .draggable({
-        inertia: false,
-        modifiers: [],
-        autoScroll: true,
-        listeners: {
-          start: (event) => {
-            console.log('Drag started', {
-              target: event.target,
-              clientX: event.client.x,
-              clientY: event.client.y
-            });
-            isDragging.value = true;
-          },
-          move: (event) => {
-            console.log('Drag move', {
-              dx: event.dx,
-              dy: event.dy,
-              clientX: event.client.x,
-              clientY: event.client.y
-            });
-          },
-          end: (event) => {
-            console.log('Drag ended', {
-              target: event.target,
-              clientX: event.client.x,
-              clientY: event.client.y
-            });
-            isDragging.value = false;
-          }
-        }
-      });
-  }
-
-  if (resizeHandleRef.value && itemRef.value) {
-    // Make the item resizable, but restrict to only using the handle
-    interact(itemRef.value)
-      .resizable({
-        // Enable resizing on bottom right corner
-        edges: { bottom: true, right: true },
-        
-        // VERY IMPORTANT: Only allow resizing when starting from the handle
-        allowFrom: '.p-grid-item__resize-handle',
-        
-        inertia: false,
-        modifiers: [],
-        listeners: {
-          start: (event) => {
-            console.log('Resize started', {
-              target: event.target,
-              rect: event.rect
-            });
-          },
-          move: (event) => {
-            console.log('Resize move', {
-              rect: event.rect,
-              deltaRect: event.deltaRect
-            });
-          },
-          end: (event) => {
-            console.log('Resize ended', {
-              target: event.target,
-              rect: event.rect
-            });
-          }
-        }
-      });
-  }
-});
-
-// Clean up interact instances
-onUnmounted(() => {
-  if (dragHandleRef.value) {
-    interact(dragHandleRef.value).unset();
-  }
-  if (itemRef.value) {
-    interact(itemRef.value).unset();
-  }
-});
-
-// Keyboard handlers
-const handleDragKeyDown = (event: KeyboardEvent) => {
-  console.log('Drag handle key down:', event.key);
-};
-
-const handleResizeKeyDown = (event: KeyboardEvent) => {
-  console.log('Resize handle key down:', event.key);
-};
-
-// Props and logic will be extended once we add interactjs
-</script>
 
 <style>
 .p-grid-item {
@@ -218,10 +641,12 @@ const handleResizeKeyDown = (event: KeyboardEvent) => {
 }
 
 .p-grid-item--dragging {
-  z-index: 100;
+  z-index: 10; /* Higher than normal grid items but still allows for z-index layering */
   box-shadow: var(--shadow-lg);
   opacity: 0.95;
   border-color: var(--primary-color);
+  cursor: grabbing;
+  will-change: transform;
 }
 
 .p-grid-item__header {
@@ -237,26 +662,34 @@ const handleResizeKeyDown = (event: KeyboardEvent) => {
   color: var(--text-color-secondary);
   cursor: grab;
   background-color: rgba(0, 0, 0, 0.03);
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
   border: 1px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.15s ease-out;
+  /* Improve draggability */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-.p-grid-item__drag-handle:hover, 
+.p-grid-item__drag-handle:hover,
 .p-grid-item__drag-handle:focus {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: rgba(0, 0, 0, 0.08);
   color: var(--primary-color);
   border-color: var(--primary-color);
+  transform: scale(1.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .p-grid-item__drag-handle:active {
-  cursor: grabbing;
-  background-color: rgba(0, 0, 0, 0.08);
+  cursor: grabbing !important;
+  background-color: rgba(0, 0, 0, 0.12);
+  transform: scale(0.98);
+  box-shadow: none;
 }
 
 .p-grid-item__drag-handle:focus {
@@ -310,7 +743,13 @@ const handleResizeKeyDown = (event: KeyboardEvent) => {
   right: 0;
   width: 24px;
   height: 24px;
-  background-image: linear-gradient(135deg, transparent 40%, var(--surface-border) 40%, var(--surface-border) 60%, transparent 60%);
+  background-image: linear-gradient(
+    135deg,
+    transparent 40%,
+    var(--surface-border) 40%,
+    var(--surface-border) 60%,
+    transparent 60%
+  );
   background-size: 14px 14px;
   background-repeat: no-repeat;
   background-position: right bottom;
@@ -326,7 +765,13 @@ const handleResizeKeyDown = (event: KeyboardEvent) => {
 .p-grid-item__resize-handle:hover,
 .p-grid-item__resize-handle:focus {
   opacity: 1;
-  background-image: linear-gradient(135deg, transparent 40%, var(--primary-color) 40%, var(--primary-color) 60%, transparent 60%);
+  background-image: linear-gradient(
+    135deg,
+    transparent 40%,
+    var(--primary-color) 40%,
+    var(--primary-color) 60%,
+    transparent 60%
+  );
 }
 
 .p-grid-item__resize-handle:focus {
@@ -357,5 +802,36 @@ const handleResizeKeyDown = (event: KeyboardEvent) => {
   border: 0;
   border-top: 1px solid var(--surface-border);
   margin: 0;
+}
+
+/* Drag area overlay to help with dragging */
+.p-grid-item__drag-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40px; /* Just cover the header area */
+  cursor: grab;
+  z-index: -1; /* Behind everything but still interactive */
+  opacity: 0;
+  background-color: transparent;
+  pointer-events: none; /* Disabled by default */
+}
+
+/* Only enable the drag overlay when the handle is being hovered */
+.p-grid-item__drag-handle:hover ~ .p-grid-item__drag-area,
+.p-grid-item__drag-handle:focus ~ .p-grid-item__drag-area {
+  pointer-events: auto;
+}
+
+.p-grid-item--animating {
+  z-index: 5; /* Higher than normal but lower than dragging */
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Add will-change for better performance on animations */
+.p-grid-item-container {
+  will-change: transform;
 }
 </style>

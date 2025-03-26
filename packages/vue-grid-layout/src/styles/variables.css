@@ -1,0 +1,34 @@
+/* src/styles/variables.css */
+/* Default CSS Variables for vue-cloudscape-board */
+
+:root {
+  /* Spacing */
+  --vue-board-gap: 10px; /* Gap between items and container padding */
+  --vue-board-item-border-radius: 4px;
+
+  /* Colors */
+  --vue-board-item-bg: #ffffff;
+  --vue-board-item-border-color: #e0e0e0;
+  --vue-board-handle-color: #545b64; /* Example color */
+  --vue-board-handle-hover-bg: #e0e0e0; /* Example color */
+  --vue-board-focus-outline: 2px solid #0073bb; /* Example focus color */
+
+  /* Grid Cell Highlighting (Examples) */
+  --vue-board-highlight-target-bg: rgba(0, 115, 187, 0.1); /* Light blueish */
+  --vue-board-highlight-other-bg: rgba(0, 0, 0, 0.05); /* Light gray */
+
+  /* Transitions */
+  --vue-board-item-transition: transform 0.2s ease-out, top 0.2s ease-out, left 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out;
+}
+
+/* Add dark mode variables if desired, e.g., using prefers-color-scheme */
+/*
+@media (prefers-color-scheme: dark) {
+  :root {
+    --vue-board-item-bg: #232323;
+    --vue-board-item-border-color: #4f4f4f;
+    --vue-board-handle-color: #cccccc;
+    --vue-board-handle-hover-bg: #4f4f4f;
+  }
+}
+*/
