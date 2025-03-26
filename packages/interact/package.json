@@ -6,7 +6,7 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "dev": "node scripts/generate-docs-index.js && nx serve",
+    "dev": "node scripts/generate-docs-index.js && vite",
     "build": "node scripts/generate-docs-index.js && vue-tsc --noEmit && nx vite:build",
     "preview": "node scripts/generate-docs-index.js && nx vite:preview",
     "lint": "eslint --fix src",
