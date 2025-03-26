@@ -5,8 +5,8 @@
     "composite": true, // Required for project references
     "module": "NodeNext", // Use Node's module system
     "moduleResolution": "NodeNext", // Use Node's module resolution
-    "types": ["node"], // Include Node types explicitly
-    "noEmit": true // Don't emit JS from this config, only type check
+    "types": ["node"] // Include Node types explicitly
+    // "noEmit": true // Cannot use noEmit with composite projects
   },
   "include": [
     // List Node-specific configuration files here
